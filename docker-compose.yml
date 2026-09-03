@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: kpi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5442:5432"
+    volumes:
+      - kpi_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: kpi_backend
+    restart: unless-stopped
+    ports:
+      - "3020:8000"
+    environment:
+      # internal docker network address - NOT the host-mapped 5442 port
+      DB_URI: postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DATABRICKS_API_KEY: ${DATABRICKS_API_KEY}
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT}
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - result_cache:/app/app/.result_cache
+
+volumes:
+  kpi_postgres_data:
+  result_cache:

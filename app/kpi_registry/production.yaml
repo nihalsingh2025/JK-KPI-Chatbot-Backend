@@ -1,0 +1,121 @@
+kpi_family: production
+kpi_names:
+  - Production
+  - Production_m
+  - Production_m_sku
+  - Production_sku
+  - Production_product
+  - Production_s
+
+description: >
+  Production KPIs measure how much of a product_type was made.
+  There are 6 variants depending on how the user wants it grouped:
+  Production (overall, no machine/sku breakdown), Production_m (per machine),
+  Production_sku (per sku/itemcode), Production_m_sku (per machine per sku),
+  Production_product (per product type, curing/tbm sections only),
+  Production_s (per sub_section/trench, curing section only).
+  All variants are grouped by unit_of_measurement (uom) - a product made in
+  more than one uom will return multiple rows.
+  It has four section - mixing,stock,curing,tbm(tyre building machine)
+  and these are the product type which are produced - "Bead Apex", "Bead Bundle", "Belt", "Belt Mother Roll", "Cap Strip",
+    "Cap Strip Mother Roll", "Carcass", "Chaffer", "Chaffer Mother Roll",
+    "Cured Tyre", "Final Compound", "Green Tyre", "Inner Liner",
+    "Master Compound", "Ply", "Ply Mother Roll", "Sidewall", "Tread".
+  And only stock section has sub_section which are - Slitter,Bead,Extruder,Cutter,4 Roll,3 Roll
+  For Production_s, sub_section instead refers to curing trenches: Trench1 through Trench8 (curing section only).
+  For Production_product, product_type in curing/tbm carries these values: in tbm - "Green Tyre" (overall production
+  across all types), "LCV", "Passenger Radial", "Unknown"; in curing - "Cured Tyre" (overall production across all
+  types), "LCV", "Passenger Radial", "Unknown". "Green Tyre"/"Cured Tyre" mean the combined total, not a real tyre type.
+
+variant_selection_rules:
+  - if: "user asks about production by trench (curing section only)"
+    use: Production_s
+  - if: "user asks about production by product type for curing or tbm section (e.g. LCV, Passenger Radial, Unknown, or overall Green Tyre / Cured Tyre)"
+    use: Production_product
+  - if: "user does not mention machine or sku"
+    use: Production
+  - if: "user mentions machine but not sku"
+    use: Production_m
+  - if: "user mentions sku/itemcode but not machine"
+    use: Production_sku
+  - if: "user mentions both machine and sku"
+    use: Production_m_sku
+  - if: "ambiguous / neither mentioned"
+    use: Production
+
+default_select_columns:
+  - date
+  - product_type
+  - machine
+  - itemcode
+  - unit_of_measurement
+  - actual_value
+  - granularity
+  - section
+  - sub_section
+gotchas:
+  - "Always filter granularity explicitly (day/month/year/shift) to avoid mixing granularities in one result."
+  - "For date-range questions, default to per-day rows (granularity='day', date between X and Y). Only use SUM(actual_value) if the user asks for a total/overall figure across the range - and then drop 'date' from SELECT and GROUP BY the remaining dimensions (machine/itemcode) instead."
+  - "product_type values should be matched with lower(product_type) = lower('...') to avoid case mismatches."
+  - "unit_of_measurement has exactly 4 canonical values:NOS, KG, Batch, Meter. Batch only applies to the Mixing section (Master Compound, Final Compound). Map user phrasing to these exact values: numbers/number/no./pcs/piece/pieces -> NOS, kg/kgs/kilogram/kilograms -> KG, batch/batches -> Batch, meter/meters/metre/metres/mts/mt -> Meter. Never write a uom value the user typed literally without mapping it first."
+  - "Production_s only exists for section = curing. Its sub_section values are exactly Trench1, Trench2, Trench3, Trench4, Trench5, Trench6, Trench7, Trench8 - not the stock-section sub_sections (Slitter/Bead/Extruder/Cutter/4 Roll/3 Roll)."
+  - "Production_product only exists for section = curing or section = tbm. In curing, product_type = 'Cured Tyre' means overall production across all product types combined (LCV+Passenger Radial+Unknown) - it is not a real tyre type, never treat it as one. In tbm, product_type = 'Green Tyre' plays the same overall/combined role."
+  - "If the user asks for a specific product type (LCV, Passenger Radial, Unknown) in curing or tbm, filter product_type directly to that value - do not use 'Cured Tyre' or 'Green Tyre' for a specific-type question, those are only for the combined/overall figure."
+
+example_questions:
+  - question: "Give me ply production machine wise for the date 1 june 2026"
+    sql: |
+      SELECT date, machine, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'production_m'
+        AND lower(product_type) = 'ply'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-06-01'
+
+  - question: "What is the total tread production between 1 July 2026 and 10 July 2026?"
+    sql: |
+      SELECT machine, unit_of_measurement, SUM(actual_value) AS actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'production_m'
+        AND lower(product_type) = 'tread'
+        AND lower(granularity) = 'day'
+        AND date BETWEEN Date '2026-07-01' AND Date '2026-07-10'
+      GROUP BY machine, unit_of_measurement
+
+  - question: "Show me sidewall production for 16 Aug 2026"
+    sql: |
+      SELECT date, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'production'
+        AND lower(product_type) = 'sidewall'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-08-16'
+
+  - question: "What is the production of curing in july 2026"
+    sql: |
+      SELECT date, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'production'
+        AND lower(section) = 'curing'
+        AND lower(granularity) = 'month'
+        AND date = Date '2026-07-01'
+
+  - question: "What was the production on trench 3 for 5 July 2026?"
+    sql: |
+      SELECT date, sub_section, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'production_s'
+        AND lower(section) = 'curing'
+        AND lower(sub_section) = 'trench3'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-07-05'
+
+  - question: "What was the LCV production in curing on 1 July 2026?"
+    sql: |
+      SELECT date, product_type, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'production_product'
+        AND lower(section) = 'curing'
+        AND lower(product_type) = 'lcv'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-07-01'

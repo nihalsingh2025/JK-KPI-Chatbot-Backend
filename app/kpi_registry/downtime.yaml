@@ -1,0 +1,54 @@
+kpi_family: downtime_reason
+kpi_names:
+  - No Schedule
+  - Operations/Material/Manpower
+  - Power Failure
+  - Preventive Maintenance
+  - Setup & Change
+  - Breakdown
+
+description: >
+  These are machine downtime-reason KPIs - the reasons why a machine was
+  off, which reduces availability and performance. They are
+  calculated machine wise, but the mapped section is included in the
+  result. Unlike Production/OEE KPIs, these are grouped on the remarks
+  column (detailed free-text reason), so a single machine and day will
+  usually return multiple rows, not one.
+  Note: if the user is asking a follow-up question about a previous OEE,
+    Availability, Performance, or Quality question (e.g. "give me its
+    breakdown"), that is NOT this KPI family - it means decomposing OEE
+    into its components. Only use this family when the user is clearly
+    asking about machine stoppage/downtime reasons as a new topic.
+default_select_columns:
+  - date
+  - machine
+  - section
+  - granularity
+  - remarks
+  - actual_value
+  - unit_of_measurement
+
+gotchas:
+  - "Expect multiple rows per machine per day - do not assume one row per machine/date, results are grouped by remarks."
+  - "Always filter granularity explicitly (day/month/year/shift) to avoid mixing granularities in one result."
+  - "Use lower() for machine and kpi_name comparisons."
+  - "If user ask for all the delay reasons or all the downtime reasons this means user is asking for all the kpi names cuz here each kpi name shows a category of delay reason so we can use `kpi_name in` in the query"
+example_questions:
+  - question: "Show me breakdown reason of machine 0204 for 2 july 2026 per shift"
+    sql: |
+      SELECT date, machine, section, granularity, remarks, actual_value,unit_of_measurement
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'breakdown'
+        AND date = Date '2026-07-02'
+        AND lower(granularity) IN ('shift a', 'shift b', 'shift c')
+        AND lower(machine) = '0204'
+      ORDER BY granularity
+
+  - question: "What were the preventive maintenance stops for machine 0110 in June 2026?"
+    sql: |
+      SELECT date, machine, section, remarks, actual_value,unit_of_measurement
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'preventive maintenance'
+        AND lower(machine) = '0110'
+        AND lower(granularity) = 'month'
+        AND date = Date '2026-06-01'
