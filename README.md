@@ -11,7 +11,7 @@ cp .env .env   # fill in OPENAI_API_KEY and DATABRICKS_API_KEY
 docker compose up --build
 ```
 
-API docs: http://localhost:8000/docs
+API docs: http://localhost:3020/docs
 
 ## Run locally without Docker
 
