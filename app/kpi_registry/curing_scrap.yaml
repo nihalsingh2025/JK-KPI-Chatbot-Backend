@@ -1,0 +1,80 @@
+kpi_family: curing_scrap
+kpi_names:
+  - Scrap
+  - Scrap_s
+  - Scrap_sku
+  - Scrap_m
+  - Scrap_m_sku
+  - Scrap_reason
+
+description: >
+  Scrap KPIs measure tyre scrap/wastage/rejection from the curing section only -
+  the actual_value is the NOS (number) of tyres rejected/eliminated.
+  There are 6 variants:
+  Scrap (overall, no breakdown - default when nothing else is asked),
+  Scrap_s (sub_section wise), Scrap_sku (sku/itemcode wise, + sub_section),
+  Scrap_m (machine wise, + sub_section), Scrap_m_sku (machine+sku wise,
+  + sub_section), Scrap_reason (reason wise, + sub_section - reason comes
+  from the "remarks" column).
+  sub_section values for curing scrap are: BUILDING, CURING, DEVELOPMENT,
+  ENGINEERING, Others, and null (when no sub_section was recorded for that
+  row).
+
+variant_selection_rules:
+  - if: "user does not mention machine, sku, sub_section, or reason"
+    use: Scrap
+  - if: "user mentions sub_section wise (BUILDING/CURING/DEVELOPMENT/ENGINEERING/Others)"
+    use: Scrap_s
+  - if: "user mentions sku/itemcode wise (with or without sub_section)"
+    use: Scrap_sku
+  - if: "user mentions machine wise (with or without sub_section) but not sku"
+    use: Scrap_m
+  - if: "user mentions both machine and sku wise (with or without sub_section)"
+    use: Scrap_m_sku
+  - if: "user asks about reason wise - scrap reason / why tyres were rejected / a specific remark"
+    use: Scrap_reason
+  - if: "ambiguous"
+    use: Scrap
+
+default_select_columns:
+  - date
+  - machine
+  - itemcode
+  - sub_section
+  - section
+  - remarks
+  - unit_of_measurement
+  - actual_value
+  - granularity
+
+gotchas:
+  - "Scrap KPIs only apply to the curing section - there is no 'section' column/filter for scrap, unlike Production/OEE."
+  - "For Scrap_s, Scrap_sku, Scrap_m, Scrap_m_sku, and Scrap_reason: always SELECT sub_section as a column regardless of whether the user asked about it. Only add sub_section to the WHERE clause if the user explicitly names a specific sub_section (BUILDING/CURING/DEVELOPMENT/ENGINEERING/Others). If not filtered, rows for all sub_sections will naturally appear since sub_section is just selected, not filtered."
+  - "For specific Scrap_reason, filter/match reason values against the 'remarks' column. Use the exact known remarks values (given in enum context) - never guess or paraphrase a reason string."
+
+example_questions:
+  - question: "What was the curing scrap on 1 September 2026?"
+    sql: |
+      SELECT date, unit_of_measurement, actual_value, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'scrap'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+
+  - question: "Give me sub_section wise scrap for 1 September 2026"
+    sql: |
+      SELECT date, section, sub_section, unit_of_measurement, actual_value, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'scrap_s'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+
+  - question: "What is the scrap quantity of itemcode 120/80R12 ULTIMA XPC 86F TL in building on 1 September 2026?"
+    sql: |
+      SELECT date, itemcode, sub_section, unit_of_measurement, actual_value, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'scrap_sku'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+        AND lower(itemcode) = lower('120/80R12 ULTIMA XPC 86F TL')
+        AND lower(sub_section) = 'building'

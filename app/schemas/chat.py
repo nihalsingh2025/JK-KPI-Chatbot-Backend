@@ -23,8 +23,6 @@ class ChatResponse(BaseModel):
 
     result_id: Optional[str] = None
     row_count: Optional[int] = None
-    columns: Optional[List[str]] = None
-    preview_rows: Optional[List[Dict[str, Any]]] = None
     is_large_result: bool = False
     download_available: bool = False
 

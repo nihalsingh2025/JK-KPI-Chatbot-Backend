@@ -8,17 +8,12 @@ kpi_names:
   - Breakdown
 
 description: >
-  These are machine downtime-reason KPIs - the reasons why a machine was
+  These are machine downtime-reason KPIs (No Schedule,Operations/Material/Manpower,Power Failure,
+  Preventive Maintenance,Setup & Change,Breakdown) - these are different reasons why a machine was
   off, which reduces availability and performance. They are
   calculated machine wise, but the mapped section is included in the
-  result. Unlike Production/OEE KPIs, these are grouped on the remarks
-  column (detailed free-text reason), so a single machine and day will
-  usually return multiple rows, not one.
-  Note: if the user is asking a follow-up question about a previous OEE,
-    Availability, Performance, or Quality question (e.g. "give me its
-    breakdown"), that is NOT this KPI family - it means decomposing OEE
-    into its components. Only use this family when the user is clearly
-    asking about machine stoppage/downtime reasons as a new topic.
+  result. These are grouped on the remarks column (detailed free-text reason), 
+  so a single machine and day will usually return multiple rows, not one.
 default_select_columns:
   - date
   - machine
