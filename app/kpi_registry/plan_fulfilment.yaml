@@ -1,0 +1,92 @@
+kpi_family: plan_fulfilment
+kpi_names:
+  - Building_Planned_Qty_sku
+  - Curing_Planned_Qty_sku
+  - Building_Fulfilled_Qty_sku
+  - Building_SKU_Plan_Fulfilment_Pct_product_type
+  - Green_Tyre_SKU_Plan_Fulfilment_Pct
+  - Curing_Fulfilled_Qty_sku
+  - Curing_SKU_Plan_Fulfilment_Pct_product_type
+  - Cured_Tyre_SKU_Plan_Fulfilment_Pct
+
+description: >
+  These KPIs track planned vs actual (fulfilled) tyre build/cure quantities
+  for the TBM (building) and Curing sections. The section is baked into the
+  kpi_name itself (Building_ = TBM section, Curing_ = curing section) -
+  there is no separate section column/filter to apply.
+  Hierarchy is sku (itemcode) -> product_type -> overall:
+  - Planned_Qty_sku and Fulfilled_Qty_sku are always at sku (itemcode) level -
+    there is no product_type or overall level for planned/actual quantity.
+  - Plan_Fulfilment_Pct_product_type KPIs are at product_type level only
+    (LCV, Passenger Radial, Unknown) - there is no sku-level percentage.
+  - Green_Tyre_SKU_Plan_Fulfilment_Pct (building) and
+    Cured_Tyre_SKU_Plan_Fulfilment_Pct (curing) are the single overall
+    percentage across all products/skus combined - no product_type or
+    itemcode filter applies to these two.
+
+variant_selection_rules:
+  - if: "user asks for planned/target quantity by sku, for building/TBM"
+    use: Building_Planned_Qty_sku
+  - if: "user asks for planned/target quantity by sku, for curing"
+    use: Curing_Planned_Qty_sku
+  - if: "user asks for actual/built/fulfilled quantity by sku, for building/TBM"
+    use: Building_Fulfilled_Qty_sku
+  - if: "user asks for actual/cured/fulfilled quantity by sku, for curing"
+    use: Curing_Fulfilled_Qty_sku
+  - if: "user asks for plan fulfilment percentage by product_type, for building/TBM"
+    use: Building_SKU_Plan_Fulfilment_Pct_product_type
+  - if: "user asks for plan fulfilment percentage by product_type, for curing"
+    use: Curing_SKU_Plan_Fulfilment_Pct_product_type
+  - if: "user asks for overall/total plan fulfilment percentage (no sku or product_type), for building/TBM"
+    use: Green_Tyre_SKU_Plan_Fulfilment_Pct
+  - if: "user asks for overall/total plan fulfilment percentage (no sku or product_type), for curing"
+    use: Cured_Tyre_SKU_Plan_Fulfilment_Pct
+  - if: "ambiguous - unclear whether building or curing, or whether planned/fulfilled/percentage is wanted"
+    use: Cured_Tyre_SKU_Plan_Fulfilment_Pct
+default_select_columns:
+  - date
+  - section
+  - itemcode
+  - product_type
+  - actual_value
+  - unit_of_measurement
+  - granularity
+
+gotchas:
+  - "Building and TBM refer to the same section - Building_* kpi_names mean the TBM section."
+  - "\"SKU fulfilment\" is often used loosely to mean plan fulfilment (percentage), not literally sku-wise fulfilled quantity - default to the corresponding *_Plan_Fulfilment_Pct KPI unless the user explicitly asks for sku-wise (itemcode-level) fulfilment."
+  - "When a follow-up asks for 'product wise' or 'sku wise' fulfilment after an overall or product-type Pct question, switch to the corresponding *_Pct_product_type or *_Fulfilled_Qty_sku KPI of the SAME section (curing stays curing, building stays TBM) - never switch section - and keep the previous date/filters unless the user overrides them."
+example_questions:
+
+  - question: "What is product wise plan fulfilment percentage in building for September 2026?"
+    sql: |
+      SELECT date,section,product_type, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'building_sku_plan_fulfilment_pct_product_type'
+        AND lower(granularity) = 'month'
+        AND date = Date '2026-09-01'
+
+  - question: "What was the curing sku fulfilment for 1 September 2026?"
+    sql: |
+      (since it is a ambiguous qus we will fallback to default rules)
+      SELECT date, section, product_type, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'cured_tyre_sku_plan_fulfilment_pct'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+
+  - question: "Give me sku wise building plan fulfilment for 5 July 2026?"
+    sql: |
+      SELECT date, section, itemcode, product_type, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'Curing_Fulfilled_Qty_sku'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-07-05'
+
+  - question: "{What was yesterday's building sku fulfilment} (turn 1), {can you show me its product wise fulfilment} (turn 2)"
+    sql: |
+      SELECT date, product_type, section, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'Building_SKU_Plan_Fulfilment_Pct_product_type'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-06'

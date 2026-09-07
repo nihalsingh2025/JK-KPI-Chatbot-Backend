@@ -16,7 +16,7 @@ PRODUCT_TYPES = [
     "Bead Apex", "Bead Bundle", "Belt", "Belt Mother Roll", "Cap Strip",
     "Cap Strip Mother Roll", "Carcass", "Chaffer", "Chaffer Mother Roll",
     "Cured Tyre", "Final Compound", "Green Tyre", "Inner Liner",
-    "Master Compound", "Ply", "Ply Mother Roll", "Sidewall", "Tread",
+    "Master Compound", "Ply", "Ply Mother Roll", "Sidewall", "Tread", "LCV", "Passenger Radial"
 ]
 
 SECTIONS = ["Mixing", "Stock", "Curing", "TBM"]
