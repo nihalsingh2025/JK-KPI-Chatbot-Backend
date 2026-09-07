@@ -55,7 +55,8 @@ default_select_columns:
 gotchas:
   - "Building and TBM refer to the same section - Building_* kpi_names mean the TBM section."
   - "\"SKU fulfilment\" is often used loosely to mean plan fulfilment (percentage), not literally sku-wise fulfilled quantity - default to the corresponding *_Plan_Fulfilment_Pct KPI unless the user explicitly asks for sku-wise (itemcode-level) fulfilment."
-  - "When a follow-up asks for 'product wise' or 'sku wise' fulfilment after an overall or product-type Pct question, switch to the corresponding *_Pct_product_type or *_Fulfilled_Qty_sku KPI of the SAME section (curing stays curing, building stays TBM) - never switch section - and keep the previous date/filters unless the user overrides them."
+  - "For a follow-up like 'product wise' or 'sku wise', keep the same section (curing/building) and same date/filters as the previous question - just switch the KPI to the matching product_type or sku-level variant."
+
 example_questions:
 
   - question: "What is product wise plan fulfilment percentage in building for September 2026?"
