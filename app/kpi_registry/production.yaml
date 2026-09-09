@@ -28,7 +28,7 @@ description: >
   types), "LCV", "Passenger Radial", "Unknown". "Green Tyre"/"Cured Tyre" mean the combined total, not a real tyre type.
 
 variant_selection_rules:
-  - if: "user asks about production by trench (curing section only)"
+  - if: "user asks about production by trench (for curing section only)"
     use: Production_s
   - if: "user asks about production by product type for curing or tbm section (e.g. LCV, Passenger Radial, Unknown, or overall Green Tyre / Cured Tyre)"
     use: Production_product
