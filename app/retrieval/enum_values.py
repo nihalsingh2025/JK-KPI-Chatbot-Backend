@@ -64,7 +64,7 @@ SCRAP_REMARKS = [
 GRANULARITIES = ["DAY", "MONTH", "YEAR", "SHIFT A", "SHIFT B", "SHIFT C"]
 
 # tuned against real typo/spacing test cases - see testing/test_fuzzy_match.py
-FUZZY_THRESHOLD = 70
+FUZZY_THRESHOLD = 60
 
 # longest known enum value, in words - used to size the n-grams built from
 # the user query (e.g. "Cap Strip Mother Roll" = 4 words)

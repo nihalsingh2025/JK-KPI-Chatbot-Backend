@@ -9,16 +9,16 @@ POST /api/v1/chat {query, session_id}
 retrieve_kpi_context   -- embed question, fetch top-k KPI registry fragments + enum values
         |
         v
-generate_sql           -- LLM (gpt-4o) writes SQL using kpi_context + enum_context + query_history
+generate_sql           -- LLM (gpt-4.1-mini) writes SQL using kpi_context + enum_context + query_history
         |
         v
 execute_sql             -- runs SQL via Databricks REST API, caches result (parquet) -> result_id
         |
         v
-format_answer            -- LLM (mini) turns row_count/columns/preview into a short NL answer
+format_answer            -- LLM (gpt-4o-mini) turns row_count/columns/preview into a short NL answer
         |
         v
-detect_plot_intent        -- LLM (mini) yes/no: does this question want a chart?
+detect_plot_intent        -- LLM (gpt-4o-mini) yes/no: does this question want a chart?
         |
         +--[wants_plot=false]--> END
         |
