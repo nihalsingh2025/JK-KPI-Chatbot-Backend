@@ -13,7 +13,8 @@ from pydantic import  BaseModel
 from langchain_openai import ChatOpenAI
 from app.config import SQL_MODEL, OPENAI_API_KEY, DATABRICKS_TABLE
 from app.graph.state import AgentState, QueryHistoryEntry
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ def _build_user_prompt(state: AgentState) -> str:
             parts.append(f"Q: {entry.user_query}\nSQL: {entry.generated_sql}")
         parts.append("")
 
-    parts.append(f"TODAY_DATE: {date.today().isoformat()} (** ONLY use for literal 'today'/'current' references, never for 'that day'/'this day' - see date resolution rules), Use this at last priority when you don't have any information from history as well as user's query regarding date. **" )
+    parts.append(f"TODAY_DATE: {datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()} (** ONLY use for literal 'today'/'current' references, never for 'that day'/'this day' - see date resolution rules), Use this at last priority when you don't have any information from history as well as user's query regarding date. **" )
 
     return "\n".join(parts)
 

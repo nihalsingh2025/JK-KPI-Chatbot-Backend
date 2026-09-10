@@ -14,7 +14,9 @@ description: >
   calculated machine wise, but the mapped section is included in the
   result. These are grouped on the remarks column (detailed free-text reason), 
   so a single machine and day will usually return multiple rows, not one.
+
 default_select_columns:
+  - kpi_name
   - date
   - machine
   - section
@@ -31,7 +33,7 @@ gotchas:
 example_questions:
   - question: "Show me breakdown reason of machine 0204 for 2 july 2026 per shift"
     sql: |
-      SELECT date, machine, section, granularity, remarks, actual_value,unit_of_measurement
+      SELECT kpi_name,date, machine, section, granularity, remarks, actual_value,unit_of_measurement
       FROM gold.gold
       WHERE lower(kpi_name) = 'breakdown'
         AND date = Date '2026-07-02'
@@ -41,7 +43,7 @@ example_questions:
 
   - question: "What were the preventive maintenance stops for machine 0110 in June 2026?"
     sql: |
-      SELECT date, machine, section, remarks, actual_value,unit_of_measurement
+      SELECT kpi_name,date, machine, section, remarks, actual_value,unit_of_measurement
       FROM gold.gold
       WHERE lower(kpi_name) = 'preventive maintenance'
         AND lower(machine) = '0110'
