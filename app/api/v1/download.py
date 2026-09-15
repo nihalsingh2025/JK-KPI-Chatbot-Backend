@@ -7,9 +7,11 @@ existing file_cache tool as-is.
 
 import logging
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 from app.schemas.chat import DownloadResponse
 from app.tools.file_cache import load_result
+from app.tools.report_cache import load_report_path
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/download", tags=["download"])
@@ -32,3 +34,19 @@ def download_result_json(result_id: str):
         columns=list(df.columns),
         rows=df.to_dict(orient="records"),
     )
+
+@router.get("/{report_id}/pdf")
+def download_report_pdf(report_id: str):
+    """
+    Serve a generated report PDF. The chat response only ever carries a
+    report_id (see report_agent.py) - the frontend fetches the actual file
+    here, same pattern as /download/{result_id}/csv for query results.
+    """
+    logger.info("download: PDF requested | report_id=%s", report_id)
+    try:
+        path = load_report_path(report_id)
+    except FileNotFoundError:
+        logger.warning("download: report not found | report_id=%s", report_id)
+        raise HTTPException(status_code=404, detail="Report not found or has expired")
+
+    return FileResponse(path, media_type="application/pdf", filename=f"{report_id}.pdf")

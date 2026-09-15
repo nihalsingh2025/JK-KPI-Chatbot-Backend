@@ -1,0 +1,79 @@
+kpi_family: curing_rework
+kpi_names:
+  - Rework
+  - Rework_s
+  - Rework_sku
+  - Rework_m
+  - Rework_m_sku
+  - Rework_reason
+
+description: >
+  Rework KPIs measure tyres from the curing section that failed an initial
+  quality inspection and were sent back for correction/repair before
+  re-inspection (unlike Scrap, which is permanently rejected/thrown away -
+  rework tyres go through correction and get re-inspected, and may still
+  pass or fail again). actual_value is the NOS (number) of tyres reworked.
+  There are 6 variants, same structure as Scrap: Rework (overall, default),
+  Rework_s (sub_section wise), Rework_sku (sku/itemcode wise, + sub_section),
+  Rework_m (machine wise, + sub_section), Rework_m_sku (machine+sku wise,
+  + sub_section), Rework_reason (reason wise, + sub_section - reason comes
+  from the "remarks" column).
+  sub_section values: BUILDING, CURING, ENGINEERING, Others,
+  and null (when not recorded).
+
+variant_selection_rules:
+  - if: "user does not mention machine, sku, sub_section, or reason"
+    use: Rework
+  - if: "user mentions sub_section only (BUILDING/CURING/DEVELOPMENT/ENGINEERING/Others)"
+    use: Rework_s
+  - if: "user mentions sku/itemcode (with or without sub_section)"
+    use: Rework_sku
+  - if: "user mentions machine (with or without sub_section) but not sku"
+    use: Rework_m
+  - if: "user mentions both machine and sku (with or without sub_section)"
+    use: Rework_m_sku
+  - if: "user asks about rework reason / why tyres needed rework / a specific remark"
+    use: Rework_reason
+  - if: "ambiguous"
+    use: Rework
+
+default_select_columns:
+  - date
+  - machine
+  - itemcode
+  - sub_section
+  - remarks
+  - unit_of_measurement
+  - actual_value
+  - granularity
+
+gotchas:
+  - "Rework KPIs only apply to the curing section - no section column/filter, same as Scrap."
+  - "Always SELECT sub_section for all variants except the base Rework - only add it to WHERE if the user names a specific sub_section."
+  - "For Rework_reason, match remarks using exact known values from enum context, not the user's own wording."
+
+example_questions:
+  - question: "What was the curing rework on 1 September 2026?"
+    sql: |
+      SELECT date, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'rework'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+
+  - question: "Give me sub_section wise rework for 1 September 2026"
+    sql: |
+      SELECT date, sub_section, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'rework_s'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+
+  - question: "What are the top rework reasons on 1 September 2026?"
+    sql: |
+      SELECT date, remarks, sub_section, unit_of_measurement, actual_value
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'rework_reason'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+      ORDER BY actual_value DESC

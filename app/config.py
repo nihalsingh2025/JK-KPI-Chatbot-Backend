@@ -12,6 +12,7 @@ DATABRICKS_API_URL = "https://c7hzxcvdxh.execute-api.ap-south-1.amazonaws.com/qu
 DATABRICKS_API_KEY = os.getenv("DATABRICKS_API_KEY", "")
 DATABRICKS_ENGINE = "athena"
 DATABRICKS_TABLE = "gold.gold"
+DATABRICKS_TABLE_RECENT = "gold.gold_daily"
 
 # --- OpenAI ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -32,6 +33,17 @@ TOP_K_KPI_MATCHES = 2
 # --- File cache ---
 RESULT_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".result_cache")
 os.makedirs(RESULT_CACHE_DIR, exist_ok=True)
+
+# --- Report cache (generated PDFs) ---
+REPORT_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".report_cache")
+os.makedirs(REPORT_CACHE_DIR, exist_ok=True)
+MAX_CACHED_REPORTS = 20
+
+# --- Analyze node ---
+# Bounds the tool-calling loop in analyze_agent so a confused model can't
+# loop indefinitely - after this many rounds we return whatever the model
+# has said so far instead of continuing.
+ANALYZE_MAX_TOOL_ITERATIONS = 4
 
 # --- Postgres checkpointer (production) ---
 # Local default matches the host port mapped in docker-compose.yml (5442).

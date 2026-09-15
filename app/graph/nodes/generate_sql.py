@@ -25,7 +25,7 @@ class SQLQuery(BaseModel):
 _llm = ChatOpenAI(model=SQL_MODEL, api_key=OPENAI_API_KEY, temperature=0).with_structured_output(SQLQuery)
 
 SYSTEM_PROMPT = f"""You are a SQL generation assistant for a tyre
-manufacturing KPI dashboard. You write a single Databricks SQL SELECT
+manufacturing KPI dashboard. You write a single Athena SQL SELECT
 statement against the table {DATABRICKS_TABLE}.
 
 - Along with sql, return kpi_family_selected: the kpi_family (from the Matched KPI context) that you actually used to write this query - this may differ from what was retrieved if the correct family wasn't the top match.
@@ -78,6 +78,17 @@ def _build_user_prompt(state: AgentState) -> str:
         parts.append("")
 
     parts.append(f"TODAY_DATE: {datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()} (** ONLY use for literal 'today'/'current' references, never for 'that day'/'this day' - see date resolution rules), Use this at last priority when you don't have any information from history as well as user's query regarding date. **" )
+
+    # intent == "analyze": a downstream tool (analyze_agent) computes the
+    # statistic, so this question must come back as raw rows, not a
+    # pre-aggregated number. Everything else about SQL generation - system
+    # prompt, kpi_registry, all other rules - is unchanged.
+    if state.get("intent") == "analyze":
+        parts.append(
+            "\nANALYSIS MODE: return raw rows at the finest available granularity "
+            "for this question. Do not aggregate, and do not compute the statistic "
+            "(std dev/max/min/trend/etc.) yourself - a downstream tool will do that."
+        )
 
     return "\n".join(parts)
 
