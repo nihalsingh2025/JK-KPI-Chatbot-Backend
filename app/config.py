@@ -16,8 +16,8 @@ DATABRICKS_TABLE_RECENT = "gold.gold_daily"
 
 # --- OpenAI ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-SQL_MODEL = "gpt-4.1-mini"
-FAST_MODEL = "gpt-4o-mini"
+SQL_MODEL = "gpt-5.6-luna"
+FAST_MODEL = "gpt-5-nano"
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 # --- Result size routing ---
