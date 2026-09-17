@@ -29,7 +29,10 @@ only the tools provided (compute_max, compute_min, compute_std_dev). You
 never see the raw rows - call a tool to get the number you need. Call
 tools as many times as needed (e.g. to compare two groups), then give a
 short, direct final answer in plain language once you have what you need.
-Available columns in this result: {columns}"""
+Available columns in this result: {columns}
+The data has already been filtered by SQL to match exactly what the
+question asked (date range, product, etc.) - never ask the user to
+clarify scope or dates, just call the right tool on what's given."""
 
 
 def analyze_agent(state: AgentState) -> AgentState:

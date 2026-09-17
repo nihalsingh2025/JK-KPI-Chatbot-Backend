@@ -28,19 +28,19 @@ description: >
   types), "LCV", "Passenger Radial", "Unknown". "Green Tyre"/"Cured Tyre" mean the combined total, not a real tyre type.
 
 variant_selection_rules:
-  - if: "user asks about production by trench (for curing section only)"
-    use: Production_s
-  - if: "user asks about production by product type for curing or tbm section (e.g. LCV, Passenger Radial, Unknown, or overall Green Tyre / Cured Tyre)"
-    use: Production_product
   - if: "user does not mention machine or sku"
     use: Production
-  - if: "user mentions machine but not sku"
+  - if: "user mentions machine wise production"
     use: Production_m
-  - if: "user mentions sku/itemcode but not machine"
+  - if: "user mentions sku/itemcode wise production"
     use: Production_sku
-  - if: "user mentions both machine and sku"
+  - if: "user mentions both machine and sku wise production"
     use: Production_m_sku
-  - if: "ambiguous / neither mentioned"
+  - if: "user asks about production by trench (for curing section only)"
+    use: Production_s
+  - if: "only use this when user asks about production by *product type specifically* for curing or tbm section (e.g. LCV, Passenger Radial, Unknown, or overall Green Tyre / Cured Tyre)"
+    use: Production_product
+  - if: "ambiguous / neither mentioned then default"
     use: Production
 
 default_select_columns:
@@ -53,6 +53,7 @@ default_select_columns:
   - granularity
   - section
   - sub_section
+
 gotchas:
   - "Always filter granularity explicitly (day/month/year/shift) to avoid mixing granularities in one result."
   - "For date-range questions, default to per-day rows (granularity='day', date between X and Y). Only use SUM(actual_value) if the user asks for a total/overall figure across the range - and then drop 'date' from SELECT and GROUP BY the remaining dimensions (machine/itemcode) instead."
@@ -91,7 +92,7 @@ example_questions:
         AND lower(granularity) = 'day'
         AND date = Date '2026-08-16'
 
-  - question: "What is the production of curing in july 2026"
+  - question: "What is the production of curing/cured tyre in july 2026"
     sql: |
       SELECT date, unit_of_measurement, actual_value
       FROM gold.gold
@@ -110,12 +111,11 @@ example_questions:
         AND lower(granularity) = 'day'
         AND date = Date '2026-07-05'
 
-  - question: "What was the LCV production in curing on 1 July 2026?"
+  - question: "What was the product wise cured tyre production in curing on 1 July 2026?"
     sql: |
       SELECT date, product_type, unit_of_measurement, actual_value
       FROM gold.gold
       WHERE lower(kpi_name) = 'production_product'
         AND lower(section) = 'curing'
-        AND lower(product_type) = 'lcv'
         AND lower(granularity) = 'day'
         AND date = Date '2026-07-01'
