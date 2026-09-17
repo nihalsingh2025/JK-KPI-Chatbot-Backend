@@ -46,6 +46,23 @@ its own default. Always call exactly one tool; never answer in plain text.
 def report_agent(state: AgentState) -> AgentState:
     logger.info("report_agent: start | user_query=%r", state.get("user_query"))
 
+    state["execution_error"] = None
+    state["result_id"] = None
+    state["row_count"] = None
+    state["columns"] = None
+    state["preview_rows"] = None
+    state["download_path"] = None
+    state["plot_spec"] = None
+    state["current_kpi_family"] = None
+    state["generated_sql"] = None
+    state["wants_plot"] = False
+    state["analysis_answer"] = None
+    state["report_id"] = None
+    state["report_path"] = None
+    state["report_type"] = None
+    state["report_error"] = None
+    state["final_answer"] = None
+
     response = _llm.invoke([
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=state["user_query"]),
