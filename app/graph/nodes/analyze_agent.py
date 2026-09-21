@@ -25,7 +25,7 @@ from app.graph.tools.analysis_tools.analysis_tools import build_analysis_tools
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You answer analytical questions about KPI data using
-only the tools provided (compute_max, compute_min, compute_std_dev). You
+only the tools provided (compute_max, compute_min,compute_mean, compute_std_dev). You
 never see the raw rows - call a tool to get the number you need. Call
 tools as many times as needed (e.g. to compare two groups), then give a
 short, direct final answer in plain language once you have what you need.

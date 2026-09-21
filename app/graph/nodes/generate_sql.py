@@ -63,28 +63,26 @@ OEE drill-down rules:
 
 def _build_user_prompt(state: AgentState) -> str:
     parts = [f"USER QUESTION (most important - this defines what the user actually wants): {state['user_query']}", "", "Matched KPI context (use this to pick the correct kpi_name, columns, and rules):"]
-    for entry in state.get("kpi_context", []):
-        parts.append(json.dumps(entry, indent=2))
-
-    enum_context = state.get("enum_context") or {}
-    if enum_context:
-        parts.append("\n\nKNOWN EXACT COLUMN VALUES (use these exact strings, not the user's own wording, for filters):")
-        parts.append(json.dumps(enum_context, indent=2))
-
-    history = state.get("query_history") or []
-    if history:
-        parts.append("\nRECENT QUESTION HISTORY (check if the current question is a follow-up to one of these - reuse their filters only if relevant):")
-        for entry in history[-5:]:
-            parts.append(f"Q: {entry.user_query}\nSQL: {entry.generated_sql}")
-        parts.append("")
-
-    parts.append(f"TODAY_DATE: {datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()} (** ONLY use for literal 'today'/'current' references, never for 'that day'/'this day' - see date resolution rules), Use this at last priority when you don't have any information from history as well as user's query regarding date. **" )
 
     if state.get("intent") == "analyze":
         parts.append(
-            "\nANALYSIS MODE: return raw rows at the finest available granularity "
-            "for this question. Do not aggregate, and do not compute the statistic "
-            "(std dev/max/min/trend/etc.) yourself - a downstream tool will do that."
+            "\nANALYSIS MODE: return raw rows, never a pre-aggregated number - a "
+            "downstream tool computes the statistic (mean/std dev/max/min), not SQL.\n"
+            "First resolve the time scope (month/year/range) exactly as you normally "
+            "would, including from history if this is a follow-up. Note: a word like "
+            "'monthly'/'this month'/'yearly' next to the stat itself (e.g. 'monthly "
+            "mean', 'this month's average') names the SCOPE, not a requested row "
+            "breakdown - do not treat it as a granularity override.\n"
+            "Then pick granularity one level finer than that scope, so there are "
+            "multiple rows to compute over:\n"
+            "- Scope is a month -> granularity = 'day'.\n"
+            "- Scope is a year -> granularity = 'month'.\n"
+            "- Explicit multi-day range -> granularity = 'day' across that range.\n"
+            "- User explicitly asks for a breakdown at a specific granularity "
+            "(e.g. 'day-wise', 'shift-wise', 'daily breakdown') -> use that granularity "
+            "instead, overriding the rule above.\n"
+            "- No date/scope resolvable at all -> default to current month at day granularity.\n"
+            "Never return a single already-aggregated row for this intent."
         )
 
     if state.get("intent") == "plot":
@@ -107,6 +105,23 @@ def _build_user_prompt(state: AgentState) -> str:
             "applying this rule - a prior answer may have used month/day granularity "
             "for its own (non-plot) purpose, which is not automatically right here."
         )
+
+    for entry in state.get("kpi_context", []):
+        parts.append(json.dumps(entry, indent=2))
+
+    enum_context = state.get("enum_context") or {}
+    if enum_context:
+        parts.append("\n\nKNOWN EXACT COLUMN VALUES (use these exact strings, not the user's own wording, for filters):")
+        parts.append(json.dumps(enum_context, indent=2))
+
+    history = state.get("query_history") or []
+    if history:
+        parts.append("\nRECENT QUESTION HISTORY (check if the current question is a follow-up to one of these - reuse their filters only if relevant):")
+        for entry in history[-5:]:
+            parts.append(f"Q: {entry.user_query}\nSQL: {entry.generated_sql}")
+        parts.append("")
+
+    parts.append(f"TODAY_DATE: {datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()} (** ONLY use for literal 'today'/'current' references, never for 'that day'/'this day' - see date resolution rules), Use this at last priority when you don't have any information from history as well as user's query regarding date. **" )
 
     return "\n".join(parts)
 

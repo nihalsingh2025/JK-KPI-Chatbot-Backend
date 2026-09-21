@@ -59,6 +59,12 @@ def build_analysis_tools(df: pd.DataFrame) -> List[StructuredTool]:
         result = result.rename(columns={"actual_value": "std_dev"})
         return result.to_dict(orient="records")
 
+    def compute_mean(group_by: Optional[List[str]] = None) -> list:
+        cols = _group_cols(df, group_by)
+        result = df.groupby(cols)["actual_value"].mean().reset_index()
+        result = result.rename(columns={"actual_value": "mean"})
+        return result.to_dict(orient="records")
+
     return [
         StructuredTool.from_function(
             func=compute_max,
@@ -90,6 +96,16 @@ def build_analysis_tools(df: pd.DataFrame) -> List[StructuredTool]:
                 "unit_of_measurement plus any extra group_by columns. Use this for "
                 "'how consistent/variable was X' questions. Returns std_dev per group, "
                 "not a specific row."
+            ),
+            args_schema=GroupByArgs,
+        ),
+        StructuredTool.from_function(
+            func=compute_mean,
+            name="compute_mean",
+            description=(
+                "Compute the mean/average of actual_value, always grouped by "
+                "unit_of_measurement plus any extra group_by columns. Use this for "
+                "'what is the average/mean X' questions."
             ),
             args_schema=GroupByArgs,
         ),
