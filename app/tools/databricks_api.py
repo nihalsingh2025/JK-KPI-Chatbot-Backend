@@ -23,7 +23,10 @@ def _select_table(sql: str) -> str:
 
     IST = ZoneInfo("Asia/Kolkata")
     _DATE_PATTERN = re.compile(r"Date\s*'(\d{4}-\d{2}-\d{2})'", re.IGNORECASE)
-    _GRANULARITY_DAY_PATTERN = re.compile(r"lower\(granularity\)\s*=\s*'day'", re.IGNORECASE)
+    _GRANULARITY_DAY_PATTERN = re.compile(
+        r"lower\(granularity\)\s*=\s*(lower\('day'\)|'day')",
+        re.IGNORECASE,
+    )
 
     if not _GRANULARITY_DAY_PATTERN.search(sql):
         logger.info("databricks_api: not day granularity, using default table")
