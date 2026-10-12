@@ -106,6 +106,13 @@ def _build_user_prompt(state: AgentState) -> str:
             "for its own (non-plot) purpose, which is not automatically right here."
         )
 
+    if state.get("intent") == "spc":
+        parts.append(
+            "\nSPC MODE: the date, granularity and aggregation rules in the parameters_spc context "
+            "below override the general rules above (default current month, month/year granularity, "
+            "SUM, TODAY_DATE-based ranges, INTERVAL). Follow its gotchas and examples exactly."
+        )
+
     for entry in state.get("kpi_context", []):
         parts.append(json.dumps(entry, indent=2))
 

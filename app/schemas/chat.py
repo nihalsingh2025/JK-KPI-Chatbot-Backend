@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     session_id: str = Field(..., description="Conversation/thread id, used as the LangGraph checkpointer thread_id")
-    intent: Optional[Literal["query", "plot", "analyze", "report"]] = Field(
+    intent: Optional[Literal["query", "plot", "analyze", "report", "spc"]] = Field(
         "query",
         description="Set by the frontend's intent selector (Query/Plot/Report/Analyze). Defaults to 'query' if omitted, so older clients keep working unchanged.",
     )
