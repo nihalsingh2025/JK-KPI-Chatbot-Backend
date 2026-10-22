@@ -16,7 +16,7 @@ class QueryHistoryEntry(BaseModel):
 # Intents are looked up in a dict by build_graph's router - adding a 5th
 # intent later means adding a value here, one entry node, and one dict
 # entry, nothing else changes.
-Intent = Literal["query", "plot", "analyze", "report"]
+Intent = Literal["query", "plot", "analyze", "report","spc"]
 
 class AgentState(TypedDict, total=False):
     # input

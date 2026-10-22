@@ -39,7 +39,12 @@ def retrieve_kpi_context(state: AgentState) -> AgentState:
     query = state["user_query"]
     history = state.get("query_history") or []
 
-    retrieved = retriever.retrieve(query)
+    if state.get("intent") == "spc":
+        retrieved = [e for e in retriever.entries if e["kpi_family"] == "parameters_spc"]
+        history = []
+        logger.info("retrieve_kpi_context: intent=spc -> forced kpi_family=parameters_spc")
+    else:
+        retrieved = retriever.retrieve(query)
 
     if history:
         last_family = history[-1].kpi_family

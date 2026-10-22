@@ -1,0 +1,192 @@
+kpi_family: engineering
+kpi_names:
+  # machines with breakdown
+  - BreakdownMachines_Grade
+  - BreakdownMachines_Grade_Section
+  # breakdown minutes
+  - BreakdownMin_Overall
+  - BreakdownMin_Grade
+  - BreakdownMin_Grade_Section
+  - BreakdownMin_m
+  - BreakdownMin_m_Discipline
+  - BreakdownMin_m_Failure
+  - BreakdownMin_Failure
+  # breakdown occurrences
+  - BreakdownOcc_Failure
+  - BreakdownOcc_m
+  - BreakdownOcc_m_Failure
+  # breakdown % of scheduled time
+  - Breakdown_Pct_Overall
+  - Breakdown_Pct_Grade
+  - Breakdown_Pct_Grade_Section
+  - Breakdown_Pct_m
+  - Breakdown_Pct_m_Discipline
+  - Breakdown_Pct_m_Failure
+  # MTBF
+  - MTBF_Overall
+  - MTBF_Grade
+  - MTBF_Grade_Section
+  - MTBF_m
+  - MTBF_m_Discipline
+  # MTTR
+  - MTTR_Overall
+  - MTTR_Grade
+  - MTTR_Grade_Section
+  - MTTR_m
+  - MTTR_m_Discipline
+  - MTTR_m_Failure
+  # days / zero breakdown
+  - DaysWithoutBreakdown_m
+  - ZeroBreakdownMachines_Section
+  # delay events and lost time by loss category
+  - Occurrences_LossCategory
+  - Occurrences_LossType
+  - Occurrences_Loss_Failure
+  - LostTime_LossCategory
+  - LostTime_LossType
+  - LostTime_Loss_m
+  - LostTime_Loss_Failure
+  # scheduled / operating time
+  - ScheduledMin_m
+  - OperatingMin_m
+
+description: >
+  Engineering KPIs describe machine breakdowns and reliability caused by
+  engineering failures (a machine breaking down) in Mixing, Stock, Curing and
+  Tyre Building: breakdown minutes, breakdown occurrences/count, number of
+  machines that had a breakdown, breakdown percentage of scheduled time, MTBF
+  (mean time between failures / mean time before fix), MTTR (mean time to
+  repair), days without breakdown, zero-breakdown machines, scheduled minutes,
+  operating minutes, and lost time / delay events by loss category.
+  Machines are graded A, B, C, D (or Unmapped when not mapped) - the grade is
+  stored in the status column. section values: Curing, Tyre Building, Stock,
+  Mixing, Unmapped. Breakdown discipline (sub_section): Mechanical,
+  Electrical, Electronics, Instrumentation, Utility. Failure reason / detailed
+  description is in the remarks column.
+  Level suffix of a kpi_name: _Overall (whole plant), _Grade (per grade),
+  _Grade_Section (per grade and section), _m (per machine, section, grade),
+  _m_Discipline (also per discipline), _m_Failure (also per failure reason).
+  LostTime_* and Occurrences_* cover all delay events except no_schedule,
+  split by section and machine grade; the macro delay category is in
+  product_type (Engineering Breakdown, Change & Setup, Preventive Maintenance,
+  Other Losses, Power Failure) and the sub reason is in sub_section.
+  Units: minutes, count, %, days. This is the engineering-failure view of
+  downtime; the downtime_reason family is the broader plant-level downtime
+  reasons view.
+
+# which levels exist for each metric: kpi_name = <metric>_<level>
+kpi_variants:
+  BreakdownMin: [Overall, Grade, Grade_Section, m, m_Discipline, m_Failure, Failure]
+  Breakdown_Pct: [Overall, Grade, Grade_Section, m, m_Discipline, m_Failure]
+  MTBF: [Overall, Grade, Grade_Section, m, m_Discipline]
+  MTTR: [Overall, Grade, Grade_Section, m, m_Discipline, m_Failure]
+  BreakdownOcc: [Failure, m, m_Failure]
+  BreakdownMachines: [Grade, Grade_Section]
+  LostTime: [LossCategory, LossType, Loss_m, Loss_Failure]
+  Occurrences: [LossCategory, LossType, Loss_Failure]
+  single_level: [DaysWithoutBreakdown_m, ZeroBreakdownMachines_Section, ScheduledMin_m, OperatingMin_m]
+
+variant_selection_rules:
+  - if: "metric is breakdown time/minutes/downtime"
+    use: "BreakdownMin_<level>"
+  - if: "metric is number/count of breakdowns or occurrences"
+    use: "BreakdownOcc_<level>"
+  - if: "metric is breakdown percentage / % of scheduled time"
+    use: "Breakdown_Pct_<level>"
+  - if: "metric is MTBF / mean time between failures / mean time before fix"
+    use: "MTBF_<level>"
+  - if: "metric is MTTR / mean time to repair"
+    use: "MTTR_<level>"
+  - if: "asks how many machines had a breakdown"
+    use: "BreakdownMachines_Grade, or BreakdownMachines_Grade_Section if a section is mentioned"
+  - if: "asks days a machine went without breakdown"
+    use: DaysWithoutBreakdown_m
+  - if: "asks how many machines ran 30+ days without breakdown (zero breakdown machines)"
+    use: ZeroBreakdownMachines_Section
+  - if: "asks scheduled minutes or operating minutes per machine"
+    use: "ScheduledMin_m or OperatingMin_m"
+  - if: "asks lost time / delay minutes by loss category, loss type or sub reason"
+    use: "LostTime_<level>"
+  - if: "asks number of delay events by loss category, loss type or sub reason"
+    use: "Occurrences_<level>"
+  - if: "level: nothing specific is mentioned"
+    use: "<metric>_Overall"
+  - if: "level: only a grade is mentioned"
+    use: "<metric>_Grade"
+  - if: "level: a section is mentioned (with or without grade)"
+    use: "<metric>_Grade_Section"
+  - if: "level: a machine is mentioned or machine wise is asked"
+    use: "<metric>_m"
+  - if: "level: a discipline is mentioned (mechanical/electrical/electronics/instrumentation/utility) or discipline wise is asked"
+    use: "<metric>_m_Discipline"
+  - if: "level: a failure reason / failure wise / specific remark is asked"
+    use: "<metric>_m_Failure (or BreakdownMin_Failure / BreakdownOcc_Failure when no machine is involved)"
+  - if: "ambiguous"
+    use: BreakdownMin_Overall
+
+default_select_columns:
+  - kpi_name
+  - date
+  - section
+  - sub_section
+  - machine
+  - product_type
+  - status
+  - remarks
+  - actual_value
+  - unit_of_measurement
+  - granularity
+
+gotchas:
+  - "In this family the status column holds the machine grade (A/B/C/D/Unmapped), not an NCM status - do not add a default status filter. Unmapped is a valid section and grade value, never filter it out."
+  - "product_type in LostTime_* and Occurrences_* KPIs holds the macro delay category (Engineering Breakdown, Change & Setup, Preventive Maintenance, Other Losses, Power Failure), not a real product type. sub_section holds the discipline for *_Discipline KPIs and the sub reason for Loss KPIs."
+  - "Only filter on the columns a level groups by - section, status, machine, sub_section and remarks are null for levels that do not group by them."
+  - "All values are precalculated - never compute MTBF, MTTR, percentages or totals from other KPIs, and never SUM or average MTBF, MTTR, % or days across rows."
+  - "Drill down means the next level of the SAME metric, keeping the previous date and filters: Overall > Grade > Grade_Section > m > m_Discipline > m_Failure. LostTime: LossCategory > LossType > Loss_m > Loss_Failure. Occurrences: LossCategory > LossType > Loss_Failure. BreakdownOcc_m > BreakdownOcc_m_Failure. ZeroBreakdownMachines_Section > DaysWithoutBreakdown_m. If a level does not exist for the metric, use the nearest available level."
+
+example_questions:
+  - question: "What was the total engineering breakdown time on 2 September 2026?"
+    sql: |
+      SELECT kpi_name, date, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'breakdownmin_overall'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-02'
+
+  - question: "How many breakdowns did machine 0201 have on 2 September 2026?"
+    sql: |
+      SELECT kpi_name, date, section, machine, eqname, status, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'breakdownocc_m'
+      AND lower(machine_no) = '0201'
+      AND lower(granularity) = 'day'
+      AND date = Date '2026-09-02'
+
+  - question: "Mechanical breakdown minutes machine wise in curing on 2 September 2026"
+    sql: |
+      SELECT kpi_name, date, section, sub_section, machine, eqname, status, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'breakdownmin_m_discipline'
+        AND lower(section) = 'curing'
+        AND lower(sub_section) = 'mechanical'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-02'
+
+  - question: "Which failure reasons caused the most breakdown minutes in curing on 2 September 2026?"
+    sql: |
+      SELECT kpi_name, date, section, status, remarks, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'breakdownmin_failure'
+        AND lower(section) = 'curing'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-02'
+      ORDER BY actual_value DESC
+
+  - question: "How many machines in stock ran 30 or more days without a breakdown on 2 September 2026?"
+    sql: |
+      SELECT kpi_name, date, section, status, actual_value, unit_of_measurement, granularity
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'zerobreakdownmachines_section'
+        AND lower(section) = 'stock'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-02'

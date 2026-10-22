@@ -40,16 +40,18 @@ from app.graph.nodes.format_answer import format_answer
 from app.graph.nodes.plot import plot
 from app.graph.nodes.analyze_agent import analyze_agent
 from app.graph.nodes.report_agent import report_agent
+from app.graph.nodes.spc_agent import spc_agent
 
 logger = logging.getLogger(__name__)
 
-_VALID_INTENTS = ("query", "plot", "analyze", "report")
+_VALID_INTENTS = ("query", "plot", "analyze", "report", "spc")
 
 # Which node the shared pipeline hands off to after execute_sql, per intent.
 _POST_SQL_MAP = {
     "query": "format_answer",
     "plot": "plot",
     "analyze": "analyze_agent",
+    "spc": "spc_agent",
 }
 
 
@@ -88,6 +90,7 @@ def build_graph(checkpointer):
     graph.add_node("plot", plot)
     graph.add_node("analyze_agent", analyze_agent)
     graph.add_node("report_agent", report_agent)
+    graph.add_node("spc_agent", spc_agent)
 
     graph.set_conditional_entry_point(
         _route_entry,
@@ -100,12 +103,13 @@ def build_graph(checkpointer):
     graph.add_conditional_edges(
         "execute_sql",
         _route_after_execute_sql,
-        {"format_answer": "format_answer", "plot": "plot", "analyze_agent": "analyze_agent"},
+        {"format_answer": "format_answer", "plot": "plot", "analyze_agent": "analyze_agent","spc_agent": "spc_agent"},
     )
 
     graph.add_edge("format_answer", END)
     graph.add_edge("plot", END)
     graph.add_edge("analyze_agent", END)
+    graph.add_edge("spc_agent", END)
     graph.add_edge("report_agent", END)
 
     compiled = graph.compile(checkpointer=checkpointer)

@@ -1,0 +1,136 @@
+kpi_family: parameters_spc
+
+kpi_names:
+  - "<Parameter> <Metric>   e.g. 'Tread Length Cpk', 'RFV Ppk', 'Belt 1 Splice UCL'"
+
+parameters:
+  tread:       [Tread Length, Tread Width, Tread Splice]
+  belt:        [Belt 1 Length, Belt 2 Length, Belt 1 Splice, Belt 2 Splice]
+  ply:         [PLY1 Length, PLY2 Length, PLY1 Splice, PLY2 Splice]
+  pa:          [PA Length, PA Splice]
+  uniformity:  [RFV, LFV, Conicity, Inflation Pressure]
+
+metrics:
+  Cp:  "30-day spread only (short term)"
+  Cpk: "30-day spread + centring (short term)"
+  Pp:  "90-day spread only (long term)"
+  Ppk: "90-day spread + centring (long term)"
+  UCL: "upper control limit (granularity = baseline)"
+  LCL: "lower control limit (granularity = baseline)"
+
+status_values: [Healthy, Warning, Major, Critical, Insufficient Data]   # only on Cp/Cpk/Pp/Ppk rows; UCL/LCL rows have 'Reference'
+
+latest_date_expression: "(SELECT max(date) FROM gold.gold WHERE lower(category) = 'spc'"   # called LATEST below
+
+description: >
+  SPC (statistical process control) KPIs on component parameters, per machine and per itemcode
+  (recipe / SKU). 17 parameters x 6 metrics = 102 kpi_names. kpi_name = '<Parameter> <Metric>',
+  the metric is the last word (always compare with lower()). All values are daily.
+  Machines: 1.tyre building machines (section = TBM) VMIEXXIUM01 to VMIEXXIUM04 and VMI_MAXX_01 to VMI_MAXX_04 measure
+  tread, belt, ply and PA lengths, widths and splices. 2.QuintuPlex has tread width only 3. Uniformity testers (section = Quality Inspection) 30-0224, 30-0297, MICROPOISE measure RFV, LFV, Conicity, Inflation Pressure.
+  Typical questions: Cpk / Cp / Ppk / Pp of a parameter, is a recipe capable, which parameters
+  are critical / warning / healthy, lowest or highest values, compare machines or recipes,
+  control limits UCL LCL, what got worse or better, trend over days.
+
+metric_selection:
+  - "Select only the metric(s) the user names - one or several."
+  - "capable / capability / 'why is cpk low' / diagnose, no metric named -> Cp, Cpk, Pp, Ppk together."
+  - "short term / 30 day -> Cp, Cpk. long term / overall / 90 day -> Pp, Ppk."
+  - "control limits / UCL / LCL -> UCL and LCL (granularity = baseline)."
+  - "A status word (critical / warning / major / healthy / insufficient data) with no metric named -> filter only on status, no kpi_name filter, so every parameter and all four metrics come back."
+  - "No metric and no status named -> Cpk."
+  - "Parameter groups (no exact name): tread = Length/Width/Splice, belt = Belt 1 and 2, ply = PLY1 and PLY2, 'length' = every * Length, 'splice' = every * Splice. Use LIKE, return all matches, never ask which one. All parameters = no parameter filter."
+
+default_select_columns:
+  - date
+  - machine
+  - itemcode
+  - product_type
+  - kpi_name
+  - granularity
+  - actual_value
+  - status
+
+gotchas:
+  - "Always filter lower(category) = 'spc', also you can use this filter only and not kpi name to get all the kpis of spc"
+  - "Not calculated for shift, month or year. Only granularity 'day' (Cp, Cpk, Pp, Ppk) and 'baseline' (UCL, LCL), both daily. Never SUM / AVG / GROUP BY."
+  - "Dates (these override the general date rules): LATEST = latest_date_expression, written inline. 'today' / 'latest' / 'now' / no date mentioned in query or history-> date = LATEST. A date the user names -> that Date literal. Relative ranges count back from LATEST, never from TODAY_DATE: 'this week' -> date BETWEEN date_trunc('week', LATEST) AND LATEST; 'last N days' -> date > date_add('day', -N, LATEST). A past month's value -> its last available date, i.e. date = (SELECT max(date) FROM gold.gold WHERE lower(category) = 'spc' AND lower(granularity) = 'day' AND date <= Date 'last day of that month')."
+  - "UCL / LCL use the same date rules as Cp/Cpk, with lower(granularity) = 'baseline'."
+  - "Recipe words: one LIKE per word joined with AND, e.g. 'ranger 215' -> lower(itemcode) LIKE '%ranger%' AND lower(itemcode) LIKE '%215%'.Return every recipe that matches."
+  - "Lowest / worst / highest / best N = ORDER BY actual_value ASC (lowest, worst) or DESC (highest, best), LIMIT N, with actual_value IS NOT NULL. Over a date range this returns the top N values in that range."
+  - "Questions about what got worse / better / changed / improved: fetch every day from the start of the period to LATEST (e.g. 'this week' -> date BETWEEN date_trunc('week', LATEST) AND LATEST), with the metric asked (default Cpk). The comparison is done by a tool, not SQL."
+  - "RFV and LFV have no Cp / Pp (one-sided spec) - use Cpk / Ppk."
+  - "Fetch raw rows only: filters, ORDER BY, LIMIT and the LATEST subquery are fine, no maths or CTEs."
+
+example_questions:
+  - question: "What is the Cpk of tread length on Maxx 1 for RANGER?"
+    sql: |
+      SELECT date, machine, itemcode, product_type, kpi_name, granularity, actual_value, status
+      FROM gold.gold
+      WHERE lower(category) = 'spc'
+        AND lower(kpi_name) = 'tread length cpk'
+        AND lower(machine) = 'vmi_maxx_01'
+        AND lower(itemcode) LIKE '%ranger%'
+        AND lower(granularity) = 'day'
+        AND date = (SELECT max(date) FROM gold.gold WHERE lower(category) = 'spc' AND lower(granularity) = 'day')
+      ORDER BY itemcode
+
+  - question: "Is tread length capable on Maxx 1 for ranger 215 on 5 Oct 2026?"
+    sql: |
+      SELECT date, machine, itemcode, product_type, kpi_name, granularity, actual_value, status
+      FROM gold.gold
+      WHERE lower(category) = 'spc'
+        AND lower(kpi_name) IN ('tread length cp', 'tread length cpk', 'tread length pp', 'tread length ppk')
+        AND lower(machine) = 'vmi_maxx_01'
+        AND lower(itemcode) LIKE '%ranger%'
+        AND lower(itemcode) LIKE '%215%'
+        AND lower(granularity) = 'day'
+        AND date = '2026-10-05'
+      ORDER BY itemcode, kpi_name
+
+  - question: "Which parameters are critical on TBM today?"
+    sql: |
+      SELECT date, machine, itemcode, product_type, kpi_name, granularity, actual_value, status
+      FROM gold.gold
+      WHERE lower(category) = 'spc'
+        AND lower(section) = 'tbm'
+        AND lower(status) = 'critical'
+        AND lower(granularity) = 'day'
+        AND date = (SELECT max(date) FROM gold.gold WHERE lower(category) = 'spc' AND lower(granularity) = 'day')
+      ORDER BY actual_value ASC
+
+  - question: "Give me the lowest Cpk on VMIEXXIUM02 this week"
+    sql: |
+      SELECT date, machine, itemcode, product_type, kpi_name, granularity, actual_value, status
+      FROM gold.gold
+      WHERE lower(category) = 'spc'
+        AND lower(machine) = 'vmiexxium02'
+        AND lower(kpi_name) LIKE '% cpk'
+        AND lower(granularity) = 'day'
+        AND actual_value IS NOT NULL
+        AND date BETWEEN Date '2026-10-05' AND Date '2026-10-07'
+      ORDER BY actual_value ASC
+      LIMIT 1
+
+  - question: "Which parameters got worse this week on VMI_MAXX_02?"
+    sql: |
+      SELECT date, machine, itemcode, product_type, kpi_name, granularity, actual_value, status
+      FROM gold.gold
+      WHERE lower(category) = 'spc'
+        AND lower(machine) = 'vmi_maxx_02'
+        AND lower(kpi_name) LIKE '% cpk'
+        AND lower(granularity) = 'day'
+        AND date IN (Date '2026-10-05', Date '2026-10-07')
+      ORDER BY kpi_name, itemcode, date ASC
+
+  - question: "Compare tread length Cpk across all Maxx machines for TAXIMAX"
+    sql: |
+      SELECT date, machine, itemcode, product_type, kpi_name, granularity, actual_value, status
+      FROM gold.gold
+      WHERE lower(category) = 'spc'
+        AND lower(kpi_name) = 'tread length cpk'
+        AND lower(machine) LIKE 'vmi_maxx%'
+        AND lower(itemcode) LIKE '%taximax%'
+        AND lower(granularity) = 'day'	
+        AND date = (SELECT max(date) FROM gold.gold WHERE lower(category) = 'spc' AND lower(granularity) = 'day')
+      ORDER BY machine, itemcode
