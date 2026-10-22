@@ -19,12 +19,19 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("", response_model=ChatResponse)
 def send_message(payload: ChatRequest, graph=Depends(get_graph)):
-    logger.info("chat: received | session_id=%s | query=%r", payload.session_id, payload.query)
+    logger.info(
+        "chat: received | session_id=%s | intent=%s | query=%r",
+        payload.session_id, payload.intent, payload.query,
+    )
 
-    config = {"configurable": {"thread_id": payload.session_id}}
+    config = {"configurable": {"thread_id": payload.session_id},
+              "run_name": payload.query[:60],}
 
     try:
-        result = graph.invoke({"user_query": payload.query}, config=config)
+        result = graph.invoke(
+            {"user_query": payload.query, "intent": payload.intent or "query"},
+            config=config,
+        )
     except Exception:
         logger.exception("chat: graph invocation failed | session_id=%s", payload.session_id)
         raise HTTPException(status_code=500, detail="Failed to process the query")
@@ -32,6 +39,7 @@ def send_message(payload: ChatRequest, graph=Depends(get_graph)):
     row_count = result.get("row_count") or 0
     response = ChatResponse(
         session_id=payload.session_id,
+        intent=result.get("intent"),
         final_answer=result.get("final_answer"),
         execution_error=result.get("execution_error"),
         current_kpi_family=result.get("current_kpi_family"),
@@ -42,10 +50,13 @@ def send_message(payload: ChatRequest, graph=Depends(get_graph)):
         download_available=bool(result.get("result_id")),
         wants_plot=bool(result.get("wants_plot")),
         plot_spec=result.get("plot_spec"),
+        report_id=result.get("report_id"),
+        report_type=result.get("report_type"),
+        report_available=bool(result.get("report_id")),
     )
 
     logger.info(
-        "chat: done | session_id=%s | result_id=%s | row_count=%s | wants_plot=%s",
-        payload.session_id, response.result_id, response.row_count, response.wants_plot,
+        "chat: done | session_id=%s | intent=%s | result_id=%s | report_id=%s",
+        payload.session_id, response.intent, response.result_id, response.report_id,
     )
     return response

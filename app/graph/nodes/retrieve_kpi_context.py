@@ -26,6 +26,15 @@ def retrieve_kpi_context(state: AgentState) -> AgentState:
     state["preview_rows"] = None
     state["download_path"] = None
     state["plot_spec"] = None
+    state["current_kpi_family"] = None
+    state["generated_sql"] = None
+    state["wants_plot"] = False
+    state["analysis_answer"] = None
+    state["report_id"] = None
+    state["report_path"] = None
+    state["report_type"] = None
+    state["report_error"] = None
+    state["final_answer"] = None
 
     query = state["user_query"]
     history = state.get("query_history") or []

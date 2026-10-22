@@ -66,6 +66,7 @@ def plot(state: AgentState) -> AgentState:
 
     plot_spec = _choose_plot_spec(state)
     state["plot_spec"] = plot_spec.model_dump()
+    state["wants_plot"] = True
     logger.info("plot: chosen plot_spec=%s", state["plot_spec"])
 
     valid_columns = set(state.get("columns") or [])

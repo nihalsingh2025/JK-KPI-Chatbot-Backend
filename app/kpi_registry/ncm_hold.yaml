@@ -1,0 +1,91 @@
+kpi_family: ncm_hold
+kpi_names:
+  - NCM_Hold
+  - NCM_Hold_sku
+
+description: >
+  NCM (Non-Conforming Material) Hold KPIs track products/tyres caught by
+  inspection as unsuitable for further movement and put on hold - this
+  applies at any stage of tyre manufacturing. actual_value
+  is the quantity of items with various unit_of_measurements in that status.
+  Applies to exactly 3 sections: Mixing, Stock, Curing. Only Stock has
+  sub_section; Mixing and Curing have none.
+  status column values: Finish, Hold, Rework, Repass, Use As, Scrap -
+  always filter status = 'Hold' by default unless the user explicitly asks
+  for a different status or for all statuses.
+  Remarks columns shows the reason for the Hold.
+  NCM_Hold is grouped by section/sub_section/machine/product_type/
+  unit_of_measurement. NCM_Hold_sku adds itemcode on top of that.
+
+product_type_hierarchy:
+  Mixing:
+    _: [Master Compound, Final Compound, Compound, Raw Material]
+  Stock:
+    4 Roll: [Belt, Ply]
+    Extruder: [Tread, SideWall]
+    3 Roll: [Inner Liner]
+    Cutter: [Belt, Ply]
+    Slitter: [Cap Strip, Chaffer]
+    Bead: [Bead Apex, Bead Bundle]
+  Curing:
+    _: [Cured Tyre]
+
+variant_selection_rules:
+  - if: "user does not mention sku/itemcode wise NCM Hold"
+    use: NCM_Hold
+  - if: "user mentions sku/itemcode wise NCM Hold"
+    use: NCM_Hold_sku
+  - if: "ambiguous"
+    use: NCM_Hold
+
+default_select_columns:
+  - date
+  - section
+  - sub_section
+  - machine
+  - product_type
+  - itemcode
+  - unit_of_measurement
+  - actual_value
+  - granularity
+  - status
+  - remarks
+
+gotchas:
+  - "Always filter status = 'hold' by default, unless the user explicitly names another status (Finish/Rework/Repass/Use As/Scrap) or asks for all statuses."
+  - "Only Stock has sub_section (4 Roll/Extruder/3 Roll/Cutter/Slitter/Bead) - never filter sub_section for Mixing or Curing."
+  - "product_type validity depends on section (and sub_section for Stock) - use product_type_hierarchy above to pick a valid product_type; don't apply a product_type from one section/sub_section to another (e.g. Belt only exists under Stock/4 Roll or Stock/Cutter)."
+  - "itemcode only applies to NCM_Hold_sku - do not select/filter itemcode for NCM_Hold."
+
+example_questions:
+  - question: "What is on hold in stock for 1 September 2026?"
+    sql: |
+      SELECT date, section, sub_section, machine, product_type, unit_of_measurement, actual_value,status,remarks
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'ncm_hold'
+        AND lower(section) = 'stock'
+        AND lower(status) = 'hold'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+
+  - question: "What is hold quantity for itemcode 120/80R12 ULTIMA XPC 86F TL on 1 September 2026?"
+    sql: |
+      SELECT date, section, sub_section, machine, product_type, itemcode, unit_of_measurement, actual_value,status,remarks
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'ncm_hold_sku'
+        AND lower(status) = 'hold'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
+        AND lower(itemcode) = lower('120/80R12 ULTIMA XPC 86F TL')
+
+  - question: "How much tread is on hold on 1 September 2026?"
+    sql: |
+      SELECT date, section, sub_section, machine, product_type, unit_of_measurement, actual_value,status,remarks
+      FROM gold.gold
+      WHERE lower(kpi_name) = 'ncm_hold'
+        AND lower(section) = 'stock'
+        AND lower(sub_section) = 'extruder'
+        AND lower(product_type) = 'tread'
+        AND lower(status) = 'hold'
+        AND lower(granularity) = 'day'
+        AND date = Date '2026-09-01'
