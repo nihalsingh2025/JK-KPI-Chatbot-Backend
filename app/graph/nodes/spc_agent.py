@@ -45,7 +45,13 @@ You are given row_count, columns and preview_rows (the first rows of the SQL res
 - Cp/Cpk bands: >=1.67 Healthy, >=1.33 Warning, >=1.00 Major, below 1.00 Critical.
   Pp/Ppk bands: >=1.50 Healthy, >=1.20 Warning, >=1.00 Major, below 1.00 Critical.
 - UCL/LCL are control limits, not spec limits. Mean, sigma, spec limits and sample sizes are not available.
-- Keep the answer short and simple."""
+- Keep the answer short and simple.
+- "Why is Cp/Cpk low": call explain_spc_issue with flow='cpk_low' (metric cp or cpk as asked).
+- A parameter "crossing the control limit" (or spec limit) on a day: flow='crossing_limit', date as asked,
+  limit_type 'control' unless the user says spec.
+- Use the exact machine, parameter and itemcode. If the itemcode in the question is not exact, take it
+  from preview_rows when there is one match; if there are several, ask which one.
+"""
 
 
 def spc_agent(state: AgentState) -> AgentState:
@@ -95,6 +101,12 @@ def spc_agent(state: AgentState) -> AgentState:
                 except Exception as exc:
                     logger.warning("spc_agent: tool %s failed | %s", call["name"], exc)
                     tool_result = {"error": str(exc)}
+
+            if isinstance(tool_result, dict) and tool_result.get("final_answer"):
+                state["final_answer"] = tool_result["final_answer"]
+                logger.info("spc_agent: answered by %s", call["name"])
+                return state
+
             messages.append(ToolMessage(content=json.dumps(tool_result, default=str), tool_call_id=call["id"]))
 
     if final_text is None:

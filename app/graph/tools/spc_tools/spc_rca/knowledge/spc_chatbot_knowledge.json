@@ -1,0 +1,2163 @@
+{
+  "version": "0.8-draft",
+  "note": "Knowledge for the SPC chatbot (simple version, goes with spc_chatbot_implementation.md v4.0). Causes and checks are possibilities to verify on the floor, not facts. Review with JK Process and Quality before go-live. Tolerances must match the KPI job.",
+  "crossing_rules": {
+    "limits": {
+      "spec": "The parameter's tolerance below (setpoint +/- tolerance, a fixed range, or from the data), the same as the KPI job. Used for 'why is Cp/Cpk low' and 'crossing the spec'.",
+      "control": "centre +/- 1.12 x (UCL - LCL), with centre = (UCL + LCL) / 2. The chart limits are for averages of 5 pieces, and single pieces vary more. Used for 'crossing the control limit'."
+    },
+    "control_widen_factor": 1.12,
+    "spikes_max_count": 5,
+    "spikes_max_share": 0.01,
+    "off_target_one_side_share": 0.8,
+    "patterns": {
+      "normal": "No reading is outside the limits. No page: say the data looks normal.",
+      "spikes": "5 or fewer readings outside, or 1% of pieces or fewer.",
+      "off_target": "More than that, with 80% or more of them on the same side.",
+      "jumping": "More than that, on both sides.",
+      "no_reading": "Checked separately: the value is blank, or 0 or below (for splices and conicity only blank counts)."
+    },
+    "zero_is_real_for": [
+      "Tread Splice",
+      "PLY1 Splice",
+      "PLY2 Splice",
+      "Belt 1 Splice",
+      "Belt 2 Splice",
+      "PA Splice",
+      "Conicity"
+    ]
+  },
+  "machines": {
+    "QuintuPlex": {
+      "Tread Width": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 3
+        },
+        "no_reading": {
+          "has_happened": "The width gauge sent 0 or nothing for some pieces.",
+          "can_happen_because": [
+            "Line stopped, or no tread under the gauge",
+            "Gauge blinded by water, steam or dirt, or the tread edge not found",
+            "Gauge signal or communication lost"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the gauge signal and tag quality; clean the lens or window",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the line was stopped or changing over at that time",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Tread is consistently wider (or narrower) than the setpoint.",
+          "can_happen_because": [
+            "Takeaway speed against extrusion speed wrong: faster stretches the tread narrower, slower leaves it wider",
+            "Extruder output (weight per metre) off; width follows output",
+            "Compound swells more or less than normal (Mooney, mixing temperature, filler dispersion)",
+            "Wrong, worn or badly seated die or insert after a change",
+            "Width gauge zero, span or edge setting wrong; a hotter tread also reads wider"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare conveyor speed ratios with the recipe",
+              "who": "Process"
+            },
+            {
+              "check": "Check whether weight on the same pieces is off the same way: both off means a real output change, width alone points to the gauge",
+              "who": "Process"
+            },
+            {
+              "check": "Check Mooney and mixer dump temperature of the batches in use",
+              "who": "Mixing / Quality"
+            },
+            {
+              "check": "Check the die ID against the recipe and gauge the die opening",
+              "who": "Maintenance"
+            },
+            {
+              "check": "Measure 5 pieces by hand and compare with the gauge; check the gauge with a reference bar",
+              "who": "Instrumentation / Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few pieces are much wider or narrower than the rest.",
+          "can_happen_because": [
+            "Lumps, scorched particles, hard spots or foreign matter in the compound",
+            "Feed strip break or feed hiccup on one extruder",
+            "Gauge misreading: tread curl, water drops, steam or the tread wandering",
+            "First pieces after a stop or a speed change"
+          ],
+          "what_to_do": [
+            {
+              "check": "Inspect the flagged pieces; check the head and preformer for scorched rubber",
+              "who": "Quality / Mixing"
+            },
+            {
+              "check": "Check that extruder's head pressure and motor load at those times",
+              "who": "Process"
+            },
+            {
+              "check": "If the same pieces have normal weight, check the gauge",
+              "who": "Instrumentation"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "Width swings above and below the limits.",
+          "can_happen_because": [
+            "Line still settling after a stop or start-up",
+            "Extruder output pulsing (feed disturbances, screw fill, surge)",
+            "Screw or line speed not steady",
+            "Rework or mixed compound batches",
+            "Takeaway or dancer speed control hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Look at a fast head-pressure trend; check the feed roll and feed strip",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check drive speed logs and control loop tuning",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check rework dosing records",
+              "who": "Mixing"
+            }
+          ]
+        }
+      },
+      "Tread Weight": {
+        "unit": "as logged",
+        "tolerance": {
+          "type": "relative",
+          "value": 0.03
+        },
+        "no_reading": {
+          "has_happened": "The scale sent 0 or a negative value for some pieces.",
+          "can_happen_because": [
+            "Line stopped, or nothing on the scale",
+            "Scale tared while loaded, so it reads negative when empty",
+            "Load cell or signal fault"
+          ],
+          "what_to_do": [
+            {
+              "check": "Zero the scale with an empty belt and check it with test weights",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the line was stopped at that time",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Tread is consistently heavier (or lighter) than the setpoint.",
+          "can_happen_because": [
+            "Takeaway speed or weight-control target wrong, so the tread is stretched too much or too little",
+            "One of the five extruders under- or over-feeding (total weight can look right while one layer is wrong)",
+            "Compound Mooney off, so output at the set screw speed is off",
+            "Density off: trapped air or wrong compound",
+            "Scale zero or span wrong, water or rubber build-up on the scale, or the belt rubbing the frame"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the weight-control target and conveyor speeds with the recipe",
+              "who": "Process"
+            },
+            {
+              "check": "Compare each extruder's head pressure, temperature and screw speed with the recipe",
+              "who": "Process"
+            },
+            {
+              "check": "Check batch Mooney and run a specific-gravity test",
+              "who": "Mixing / Quality"
+            },
+            {
+              "check": "Re-weigh 5 pieces on a certified bench scale",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few pieces are much heavier or lighter than the rest.",
+          "can_happen_because": [
+            "Feed strip break on one extruder",
+            "Lumps, scorch or hard spots in the compound",
+            "First pieces after a restart",
+            "Double or partial piece, or pieces overlapping on the scale"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check each extruder's head pressure at those times",
+              "who": "Process"
+            },
+            {
+              "check": "Check the cut length of the same pieces",
+              "who": "Process"
+            },
+            {
+              "check": "Inspect the scale area for knocks or contact",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "Weight swings above and below the limits.",
+          "can_happen_because": [
+            "Line still settling after a stop or start-up",
+            "Extruder output pulsing (feed, screw fill, surge)",
+            "Weight control loop reacting too hard for the scale's delay",
+            "Rework or mixed compound batches",
+            "Scale vibration or belt tracking"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check a fast head-pressure trend and the feed strips",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Review the weight loop tuning",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check rework dosing records",
+              "who": "Mixing"
+            }
+          ]
+        }
+      },
+      "Tread Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The cut-length reading was 0 or blank for some pieces.",
+          "can_happen_because": [
+            "Line stopped, or the skiver not cutting",
+            "Length sensor or encoder signal lost",
+            "Communication lost, or the tag not updating"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the skiver alarm log and the encoder signal",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check whether the line was stopped at that time",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Tread pieces are cut consistently shorter (or longer) than the setpoint.",
+          "can_happen_because": [
+            "Shrinkage allowance in the skiver setpoint wrong for this compound or tread temperature",
+            "Tread hotter or cooler at the skiver (cooling water temperature or flow, line speed)",
+            "Tread stretched over the conveyors by a speed difference, then pulling back after the cut",
+            "Measuring wheel worn, encoder scaling wrong, or the tread slipping on the belt",
+            "Length taken between different reference edges of the skived ends"
+          ],
+          "what_to_do": [
+            {
+              "check": "Hand-measure 5 to 10 cut pieces at booking and compare with the logged length",
+              "who": "Quality / Process"
+            },
+            {
+              "check": "Take an IR reading of tread temperature at the skiver; check cooling water temperatures",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check conveyor speed ratios against the recipe",
+              "who": "Process"
+            },
+            {
+              "check": "Mark tread and belt with chalk over 10 m and recalibrate the encoder",
+              "who": "Instrumentation / Maintenance"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few pieces are much longer or shorter than the rest.",
+          "can_happen_because": [
+            "Missed, double or partial cut, or the skiver re-synchronising after a stop",
+            "Tread skewed at the cutter or measuring point",
+            "Edge misread because of water or scrap",
+            "Length value logged twice (it can update a few seconds after the cut counter)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the skiver alarm log at those times",
+              "who": "Maintenance"
+            },
+            {
+              "check": "Check tread guiding before the skiver",
+              "who": "Maintenance"
+            },
+            {
+              "check": "Ask Automation when the length value updates relative to the cut counter",
+              "who": "Automation"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "Cut length swings above and below the limits.",
+          "can_happen_because": [
+            "Line still settling after a stop or start-up",
+            "Tread slipping by different amounts (wet or dirty belt, low belt tension)",
+            "Tension between conveyors or dancers varying, so stretch and shrinkage vary",
+            "Flying-cut synchronisation or servo tuning, or line speed not steady",
+            "Weight control loop changing the stretch"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check belt condition, cleanliness and tension",
+              "who": "Maintenance"
+            },
+            {
+              "check": "Check dancer and conveyor speed trends",
+              "who": "Process / Instrumentation"
+            },
+            {
+              "check": "Check skiver servo tuning; scatter well beyond the skiver's own accuracy points upstream",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      }
+    },
+    "TBM": {
+      "Tread Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The tread length was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The tread is applied consistently longer (or shorter) than the setpoint.",
+          "can_happen_because": [
+            "Tread booked too early and still shrinking, or used at a different temperature",
+            "Measuring wheel slipping, sinking into soft rubber, worn or out of calibration; or the camera edge measurement off",
+            "The tread stretched by let-off, festoon or liner stripping before cutting, then shrinking back",
+            "Cut pieces contracting while they wait for the drum (longer waits shrink more)",
+            "Setpoint not matching the drum, or wrong in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Measure 5 tread pieces by hand and compare with the logged length",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the tread splice on the same tyres: too short gives an open splice, too long an overlap",
+              "who": "Process"
+            },
+            {
+              "check": "Check the extrusion line data for the same tread lot (speed, booking temperature, rework)",
+              "who": "Process / Quality"
+            },
+            {
+              "check": "Clean the measuring wheel; check wear, contact spring and encoder; jog a fixed length against a tape",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check festoon loop limits, dancer, brake and wind-up tension, and the peel point",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the setpoint against the spec, the drum circumference and the recipe change log",
+              "who": "Process"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much longer or shorter tread than the rest.",
+          "can_happen_because": [
+            "Tread skewed on the conveyor",
+            "Tread from extruder start-up or of unusual age mixed in",
+            "A stock splice near the piece end trimmed or recut",
+            "End misread by the camera (glare, shadow at a lifted end)",
+            "Manual cut, re-feed or operator intervention",
+            "Piece contracted while waiting during a stop"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the spike times with the stock-splice trim log and the stop log",
+              "who": "Process"
+            },
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Ask the operator about those tyres (barcodes from the data)",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The tread length swings above and below the limits.",
+          "can_happen_because": [
+            "Machine still settling after a stop or start-up",
+            "Festoon, dancer or let-off tension hunting",
+            "The tread of different ages, lots or rolls mixed",
+            "Slip on the measuring wheel or a loose coupling, or the centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check festoon, dancer and let-off tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Split the data by roll or lot, shift and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the measuring wheel coupling and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "PLY1 Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The body ply 1 length was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The body ply 1 is applied consistently longer (or shorter) than the setpoint.",
+          "can_happen_because": [
+            "Cord tension uneven across the ply",
+            "Measuring wheel slipping, sinking into soft rubber, worn or out of calibration; or the camera edge measurement off",
+            "The body ply 1 stretched by let-off, festoon or liner stripping before cutting, then shrinking back",
+            "Cut pieces contracting while they wait for the drum (longer waits shrink more)",
+            "Setpoint not matching the drum, or wrong in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Measure 5 ply pieces by hand and compare with the logged length",
+              "who": "Quality"
+            },
+            {
+              "check": "Clean the measuring wheel; check wear, contact spring and encoder; jog a fixed length against a tape",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check festoon loop limits, dancer, brake and wind-up tension, and the peel point",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the setpoint against the spec, the drum circumference and the recipe change log",
+              "who": "Process"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much longer or shorter body ply 1 than the rest.",
+          "can_happen_because": [
+            "Folded end misread",
+            "A stock splice near the piece end trimmed or recut",
+            "End misread by the camera (glare, shadow at a lifted end)",
+            "Manual cut, re-feed or operator intervention",
+            "Piece contracted while waiting during a stop"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the spike times with the stock-splice trim log and the stop log",
+              "who": "Process"
+            },
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Ask the operator about those tyres (barcodes from the data)",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The body ply 1 length swings above and below the limits.",
+          "can_happen_because": [
+            "Machine still settling after a stop or start-up",
+            "Festoon, dancer or let-off tension hunting",
+            "The body ply 1 of different ages, lots or rolls mixed",
+            "Slip on the measuring wheel or a loose coupling, or the centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check festoon, dancer and let-off tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Split the data by roll or lot, shift and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the measuring wheel coupling and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "PLY2 Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The body ply 2 length was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The body ply 2 is applied consistently longer (or shorter) than the setpoint.",
+          "can_happen_because": [
+            "Cord tension uneven across the ply",
+            "Measuring wheel slipping, sinking into soft rubber, worn or out of calibration; or the camera edge measurement off",
+            "The body ply 2 stretched by let-off, festoon or liner stripping before cutting, then shrinking back",
+            "Cut pieces contracting while they wait for the drum (longer waits shrink more)",
+            "Setpoint not matching the drum, or wrong in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Measure 5 ply pieces by hand and compare with the logged length",
+              "who": "Quality"
+            },
+            {
+              "check": "Clean the measuring wheel; check wear, contact spring and encoder; jog a fixed length against a tape",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check festoon loop limits, dancer, brake and wind-up tension, and the peel point",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the setpoint against the spec, the drum circumference and the recipe change log",
+              "who": "Process"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much longer or shorter body ply 2 than the rest.",
+          "can_happen_because": [
+            "Folded end misread",
+            "A stock splice near the piece end trimmed or recut",
+            "End misread by the camera (glare, shadow at a lifted end)",
+            "Manual cut, re-feed or operator intervention",
+            "Piece contracted while waiting during a stop"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the spike times with the stock-splice trim log and the stop log",
+              "who": "Process"
+            },
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Ask the operator about those tyres (barcodes from the data)",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The body ply 2 length swings above and below the limits.",
+          "can_happen_because": [
+            "Machine still settling after a stop or start-up",
+            "Festoon, dancer or let-off tension hunting",
+            "The body ply 2 of different ages, lots or rolls mixed",
+            "Slip on the measuring wheel or a loose coupling, or the centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check festoon, dancer and let-off tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Split the data by roll or lot, shift and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the measuring wheel coupling and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "Belt 1 Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The belt 1 length was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The belt 1 is applied consistently longer (or shorter) than the setpoint.",
+          "can_happen_because": [
+            "Belt width varying (strip sag on the stock roll): 3 mm of width is about 8 mm of length at a 20 degree cut",
+            "Cut angle setting not matching the real cord angle; cutting between cords moves the length in steps",
+            "Belt sagging in an unsupported loop",
+            "Measuring wheel slipping, sinking into soft rubber, worn or out of calibration; or the camera edge measurement off",
+            "The belt 1 stretched by let-off, festoon or liner stripping before cutting, then shrinking back",
+            "Cut pieces contracting while they wait for the drum (longer waits shrink more)",
+            "Setpoint not matching the drum, or wrong in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Measure 5 belt pieces by hand and compare with the logged length",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the belt width and cut angle at the cutter",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Clean the measuring wheel; check wear, contact spring and encoder; jog a fixed length against a tape",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check festoon loop limits, dancer, brake and wind-up tension, and the peel point",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the setpoint against the spec, the drum circumference and the recipe change log",
+              "who": "Process"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much longer or shorter belt 1 than the rest.",
+          "can_happen_because": [
+            "Tip or edge displaced by the cut",
+            "Dog ear or stock splice in the piece",
+            "A stock splice near the piece end trimmed or recut",
+            "End misread by the camera (glare, shadow at a lifted end)",
+            "Manual cut, re-feed or operator intervention",
+            "Piece contracted while waiting during a stop"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the spike times with the stock-splice trim log and the stop log",
+              "who": "Process"
+            },
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Ask the operator about those tyres (barcodes from the data)",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The belt 1 length swings above and below the limits.",
+          "can_happen_because": [
+            "Belt width cycling once per spool turn (look for that period)",
+            "Machine still settling after a stop or start-up",
+            "Festoon, dancer or let-off tension hunting",
+            "The belt 1 of different ages, lots or rolls mixed",
+            "Slip on the measuring wheel or a loose coupling, or the centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check festoon, dancer and let-off tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Split the data by roll or lot, shift and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the measuring wheel coupling and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "Belt 2 Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The belt 2 length was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The belt 2 is applied consistently longer (or shorter) than the setpoint.",
+          "can_happen_because": [
+            "Belt width varying (strip sag on the stock roll): 3 mm of width is about 8 mm of length at a 20 degree cut",
+            "Cut angle setting not matching the real cord angle; cutting between cords moves the length in steps",
+            "Belt sagging in an unsupported loop",
+            "Measuring wheel slipping, sinking into soft rubber, worn or out of calibration; or the camera edge measurement off",
+            "The belt 2 stretched by let-off, festoon or liner stripping before cutting, then shrinking back",
+            "Cut pieces contracting while they wait for the drum (longer waits shrink more)",
+            "Setpoint not matching the drum, or wrong in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Measure 5 belt pieces by hand and compare with the logged length",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the belt width and cut angle at the cutter",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Clean the measuring wheel; check wear, contact spring and encoder; jog a fixed length against a tape",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check festoon loop limits, dancer, brake and wind-up tension, and the peel point",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the setpoint against the spec, the drum circumference and the recipe change log",
+              "who": "Process"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much longer or shorter belt 2 than the rest.",
+          "can_happen_because": [
+            "Tip or edge displaced by the cut",
+            "Dog ear or stock splice in the piece",
+            "A stock splice near the piece end trimmed or recut",
+            "End misread by the camera (glare, shadow at a lifted end)",
+            "Manual cut, re-feed or operator intervention",
+            "Piece contracted while waiting during a stop"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the spike times with the stock-splice trim log and the stop log",
+              "who": "Process"
+            },
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Ask the operator about those tyres (barcodes from the data)",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The belt 2 length swings above and below the limits.",
+          "can_happen_because": [
+            "Belt width cycling once per spool turn (look for that period)",
+            "Machine still settling after a stop or start-up",
+            "Festoon, dancer or let-off tension hunting",
+            "The belt 2 of different ages, lots or rolls mixed",
+            "Slip on the measuring wheel or a loose coupling, or the centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check festoon, dancer and let-off tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Split the data by roll or lot, shift and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the measuring wheel coupling and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "PA Length": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 5
+        },
+        "no_reading": {
+          "has_happened": "The inner liner (PA) length was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The inner liner (PA) is applied consistently longer (or shorter) than the setpoint.",
+          "can_happen_because": [
+            "Liner and sidewall stock rolls at different tensions, so lengths differ after cutting",
+            "Vacuum conveyor not holding the piece against shrink",
+            "Measuring wheel slipping, sinking into soft rubber, worn or out of calibration; or the camera edge measurement off",
+            "The inner liner (PA) stretched by let-off, festoon or liner stripping before cutting, then shrinking back",
+            "Cut pieces contracting while they wait for the drum (longer waits shrink more)",
+            "Setpoint not matching the drum, or wrong in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Measure 5 liner pieces by hand and compare with the logged length",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum on the conveyor",
+              "who": "Maintenance"
+            },
+            {
+              "check": "Clean the measuring wheel; check wear, contact spring and encoder; jog a fixed length against a tape",
+              "who": "Maintenance / Instrumentation"
+            },
+            {
+              "check": "Check festoon loop limits, dancer, brake and wind-up tension, and the peel point",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the setpoint against the spec, the drum circumference and the recipe change log",
+              "who": "Process"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much longer or shorter inner liner (PA) than the rest.",
+          "can_happen_because": [
+            "Ends matched by hand",
+            "Vacuum dropping out for a moment",
+            "A stock splice near the piece end trimmed or recut",
+            "End misread by the camera (glare, shadow at a lifted end)",
+            "Manual cut, re-feed or operator intervention",
+            "Piece contracted while waiting during a stop"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the spike times with the stock-splice trim log and the stop log",
+              "who": "Process"
+            },
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Ask the operator about those tyres (barcodes from the data)",
+              "who": "Shift supervisor"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The inner liner (PA) length swings above and below the limits.",
+          "can_happen_because": [
+            "Machine still settling after a stop or start-up",
+            "Festoon, dancer or let-off tension hunting",
+            "The inner liner (PA) of different ages, lots or rolls mixed",
+            "Slip on the measuring wheel or a loose coupling, or the centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "If it happened right after a stop, review the start-up procedure",
+              "who": "Process"
+            },
+            {
+              "check": "Check festoon, dancer and let-off tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Split the data by roll or lot, shift and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the measuring wheel coupling and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "Tread Width": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "absolute",
+          "value": 3
+        },
+        "no_reading": {
+          "has_happened": "The tread width was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Tread on the building machine is consistently wider (or narrower) than the setpoint.",
+          "can_happen_because": [
+            "Extruded tread already off width (rework, rheology or line speed upstream)",
+            "Tread stretched on the servicer, which makes it narrower",
+            "Tread still shrinking, or used at a different age or temperature",
+            "Camera edge measurement or centring off",
+            "Wrong setpoint in the recipe"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the extrusion width log for the same tread lot",
+              "who": "Process"
+            },
+            {
+              "check": "Check servicer tension",
+              "who": "Process"
+            },
+            {
+              "check": "Check the tread age and temperature at use",
+              "who": "Quality / Shift supervisor"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have a much wider or narrower tread than the rest.",
+          "can_happen_because": [
+            "Camera misread at the tread edge or at the splice",
+            "Tread skewed on the conveyor, or a damaged edge",
+            "Tread from extruder start-up or of unusual age mixed in"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "Tread width swings above and below the limits.",
+          "can_happen_because": [
+            "Treads of different ages, lots or runs mixed",
+            "Servicer tension varying",
+            "Centring guide hunting"
+          ],
+          "what_to_do": [
+            {
+              "check": "Split the data by tread lot and time since the last stop",
+              "who": "Quality"
+            },
+            {
+              "check": "Check servicer tension trends and the guide rollers",
+              "who": "Maintenance"
+            }
+          ]
+        }
+      },
+      "Tread Splice": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "range",
+          "low": -2,
+          "high": 0
+        },
+        "no_reading": {
+          "has_happened": "The tread splice measurement was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The tread splice is consistently above (or below) the -2 to 0 mm range.",
+          "can_happen_because": [
+            "Tread length off: a short tread gives an open splice, a long tread an overlap",
+            "Skive angle wrong, or a ragged cut",
+            "The tread length not matching the drum: a 0.1% drum error is about half of a 0 to 3 mm window",
+            "Applicator-to-drum speed ratio stretching or compressing the ends",
+            "Pressure roller setting",
+            "Camera offset or calibration",
+            "Spec or nominal not right for this recipe (all machines off the same way)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare with the tread length on the same tyres",
+              "who": "Process"
+            },
+            {
+              "check": "Check the drum circumference at build diameter with a pi tape, and the expansion setting",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the applicator speed ratio and pressure roller setting",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "If other machines show the same offset for this recipe, confirm the nominal with Quality",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tread splices are far from the rest.",
+          "can_happen_because": [
+            "Tread slipping under the tread press during the cut, giving a tilted cut",
+            "Old or bloomed tread with poor tack, so the end lifts",
+            "Camera misread from glare, shadow or stray light",
+            "A stock splice landing at the machine splice",
+            "Leading end lifting when the vacuum or clamp hold fails"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those green tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum and end grip on the applicator",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The tread splice swings above and below the limits.",
+          "can_happen_because": [
+            "Wavy or mismatched ends (speed ratio, centring)",
+            "The tread tension varying, so length and overlap vary",
+            "Material tack varying (age, heat, humidity, bloom)",
+            "Different material lots or rolls mixed"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the applicator speed ratio and the centring guides",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check let-off and festoon tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check material age and storage conditions",
+              "who": "Quality"
+            }
+          ]
+        },
+        "note": "Confirm the sign convention of VRL_TDAP_SPLICE_AVERAGE (does negative mean overlap or gap?) before reading direction into it."
+      },
+      "PLY1 Splice": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "range",
+          "low": 0,
+          "high": 3
+        },
+        "no_reading": {
+          "has_happened": "The body ply 1 splice measurement was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The body ply 1 splice is consistently above (or below) the 0 to 3 mm range.",
+          "can_happen_because": [
+            "A stiff or doubled splice also hurts uniformity later",
+            "The body ply 1 length not matching the drum: a 0.1% drum error is about half of a 0 to 3 mm window",
+            "Applicator-to-drum speed ratio stretching or compressing the ends",
+            "Pressure roller setting",
+            "Camera offset or calibration",
+            "Spec or nominal not right for this recipe (all machines off the same way)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare with the PLY1 length on the same tyres",
+              "who": "Process"
+            },
+            {
+              "check": "Check the drum circumference at build diameter with a pi tape, and the expansion setting",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the applicator speed ratio and pressure roller setting",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "If other machines show the same offset for this recipe, confirm the nominal with Quality",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few body ply 1 splices are far from the rest.",
+          "can_happen_because": [
+            "Camera misread from glare, shadow or stray light",
+            "A stock splice landing at the machine splice",
+            "Leading end lifting when the vacuum or clamp hold fails"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those green tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum and end grip on the applicator",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The body ply 1 splice swings above and below the limits.",
+          "can_happen_because": [
+            "Wavy or mismatched ends (speed ratio, centring)",
+            "The body ply 1 tension varying, so length and overlap vary",
+            "Material tack varying (age, heat, humidity, bloom)",
+            "Different material lots or rolls mixed"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the applicator speed ratio and the centring guides",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check let-off and festoon tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check material age and storage conditions",
+              "who": "Quality"
+            }
+          ]
+        },
+        "note": "Measured at the middle of the splice by camera; confirm whether left and right points are also logged."
+      },
+      "PLY2 Splice": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "range",
+          "low": 0,
+          "high": 3
+        },
+        "no_reading": {
+          "has_happened": "The body ply 2 splice measurement was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The body ply 2 splice is consistently above (or below) the 0 to 3 mm range.",
+          "can_happen_because": [
+            "A stiff or doubled splice also hurts uniformity later",
+            "The body ply 2 length not matching the drum: a 0.1% drum error is about half of a 0 to 3 mm window",
+            "Applicator-to-drum speed ratio stretching or compressing the ends",
+            "Pressure roller setting",
+            "Camera offset or calibration",
+            "Spec or nominal not right for this recipe (all machines off the same way)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare with the PLY2 length on the same tyres",
+              "who": "Process"
+            },
+            {
+              "check": "Check the drum circumference at build diameter with a pi tape, and the expansion setting",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the applicator speed ratio and pressure roller setting",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "If other machines show the same offset for this recipe, confirm the nominal with Quality",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few body ply 2 splices are far from the rest.",
+          "can_happen_because": [
+            "Camera misread from glare, shadow or stray light",
+            "A stock splice landing at the machine splice",
+            "Leading end lifting when the vacuum or clamp hold fails"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those green tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum and end grip on the applicator",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The body ply 2 splice swings above and below the limits.",
+          "can_happen_because": [
+            "Wavy or mismatched ends (speed ratio, centring)",
+            "The body ply 2 tension varying, so length and overlap vary",
+            "Material tack varying (age, heat, humidity, bloom)",
+            "Different material lots or rolls mixed"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the applicator speed ratio and the centring guides",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check let-off and festoon tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check material age and storage conditions",
+              "who": "Quality"
+            }
+          ]
+        },
+        "note": "Measured at the middle of the splice by camera; confirm whether left and right points are also logged."
+      },
+      "PA Splice": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "range",
+          "low": 0,
+          "high": 3
+        },
+        "no_reading": {
+          "has_happened": "The inner liner (PA) splice measurement was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The inner liner (PA) splice is consistently above (or below) the 0 to 3 mm range.",
+          "can_happen_because": [
+            "Liner and sidewalls at different tensions, so the ends do not meet as set",
+            "The inner liner (PA) length not matching the drum: a 0.1% drum error is about half of a 0 to 3 mm window",
+            "Applicator-to-drum speed ratio stretching or compressing the ends",
+            "Pressure roller setting",
+            "Camera offset or calibration",
+            "Spec or nominal not right for this recipe (all machines off the same way)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare with the PA length on the same tyres",
+              "who": "Process"
+            },
+            {
+              "check": "Check the drum circumference at build diameter with a pi tape, and the expansion setting",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the applicator speed ratio and pressure roller setting",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "If other machines show the same offset for this recipe, confirm the nominal with Quality",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few inner liner (PA) splices are far from the rest.",
+          "can_happen_because": [
+            "Camera misread from glare, shadow or stray light",
+            "A stock splice landing at the machine splice",
+            "Leading end lifting when the vacuum or clamp hold fails"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those green tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum and end grip on the applicator",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The inner liner (PA) splice swings above and below the limits.",
+          "can_happen_because": [
+            "Wavy or mismatched ends (speed ratio, centring)",
+            "The inner liner (PA) tension varying, so length and overlap vary",
+            "Material tack varying (age, heat, humidity, bloom)",
+            "Different material lots or rolls mixed"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the applicator speed ratio and the centring guides",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check let-off and festoon tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check material age and storage conditions",
+              "who": "Quality"
+            }
+          ]
+        },
+        "note": "Measured at the middle of the splice by camera; confirm whether left and right points are also logged."
+      },
+      "Belt 1 Splice": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "from_data",
+          "rule": "mean +/- 3 sd"
+        },
+        "no_reading": {
+          "has_happened": "The belt 1 splice measurement was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The belt 1 splice is consistently above (or below) its normal range.",
+          "can_happen_because": [
+            "Leading and trailing cut angles not matching, giving V- or A-shaped splices",
+            "Belt width or angle different between consecutive pieces",
+            "The belt 1 length not matching the drum: a 0.1% drum error is about half of a 0 to 3 mm window",
+            "Applicator-to-drum speed ratio stretching or compressing the ends",
+            "Pressure roller setting",
+            "Camera offset or calibration",
+            "Spec or nominal not right for this recipe (all machines off the same way)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare with the belt 1 length on the same tyres",
+              "who": "Process"
+            },
+            {
+              "check": "Check the drum circumference at build diameter with a pi tape, and the expansion setting",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the applicator speed ratio and pressure roller setting",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "If other machines show the same offset for this recipe, confirm the nominal with Quality",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few belt 1 splices are far from the rest.",
+          "can_happen_because": [
+            "Flared or lifted wire ends at the cut",
+            "Tip displaced by the cut, or a dog ear",
+            "Camera misread from glare, shadow or stray light",
+            "A stock splice landing at the machine splice",
+            "Leading end lifting when the vacuum or clamp hold fails"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those green tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum and end grip on the applicator",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The belt 1 splice swings above and below the limits.",
+          "can_happen_because": [
+            "Wavy or mismatched ends (speed ratio, centring)",
+            "The belt 1 tension varying, so length and overlap vary",
+            "Material tack varying (age, heat, humidity, bloom)",
+            "Different material lots or rolls mixed"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the applicator speed ratio and the centring guides",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check let-off and festoon tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check material age and storage conditions",
+              "who": "Quality"
+            }
+          ]
+        },
+        "note": "Limits come from the data (mean +/- 3 sd), so off_target only shows up in control-limit questions."
+      },
+      "Belt 2 Splice": {
+        "unit": "mm",
+        "tolerance": {
+          "type": "from_data",
+          "rule": "mean +/- 3 sd"
+        },
+        "no_reading": {
+          "has_happened": "The belt 2 splice measurement was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Edge not found by the camera: glare, a shadow at a lifted end, weak light or dirty optics",
+            "Machine in manual mode, the station bypassed, or the tyre aborted or rebuilt",
+            "A missing value stored as 0, or a wrong tag in the data path"
+          ],
+          "what_to_do": [
+            {
+              "check": "Clean the optics, check the lighting and check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check whether the machine was in manual mode at that time",
+              "who": "Shift supervisor"
+            },
+            {
+              "check": "Compare the raw machine value with the value in the data lake",
+              "who": "Instrumentation / Data team"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "The belt 2 splice is consistently above (or below) its normal range.",
+          "can_happen_because": [
+            "Leading and trailing cut angles not matching, giving V- or A-shaped splices",
+            "Belt width or angle different between consecutive pieces",
+            "The belt 2 length not matching the drum: a 0.1% drum error is about half of a 0 to 3 mm window",
+            "Applicator-to-drum speed ratio stretching or compressing the ends",
+            "Pressure roller setting",
+            "Camera offset or calibration",
+            "Spec or nominal not right for this recipe (all machines off the same way)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare with the belt 2 length on the same tyres",
+              "who": "Process"
+            },
+            {
+              "check": "Check the drum circumference at build diameter with a pi tape, and the expansion setting",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check the applicator speed ratio and pressure roller setting",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check the camera on its calibration target",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "If other machines show the same offset for this recipe, confirm the nominal with Quality",
+              "who": "Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few belt 2 splices are far from the rest.",
+          "can_happen_because": [
+            "Flared or lifted wire ends at the cut",
+            "Tip displaced by the cut, or a dog ear",
+            "Camera misread from glare, shadow or stray light",
+            "A stock splice landing at the machine splice",
+            "Leading end lifting when the vacuum or clamp hold fails"
+          ],
+          "what_to_do": [
+            {
+              "check": "Review the stored camera images of those tyres",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Inspect those green tyres if still available (barcodes from the data)",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the vacuum and end grip on the applicator",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "The belt 2 splice swings above and below the limits.",
+          "can_happen_because": [
+            "Wavy or mismatched ends (speed ratio, centring)",
+            "The belt 2 tension varying, so length and overlap vary",
+            "Material tack varying (age, heat, humidity, bloom)",
+            "Different material lots or rolls mixed"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the applicator speed ratio and the centring guides",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check let-off and festoon tension trends",
+              "who": "Maintenance / Process"
+            },
+            {
+              "check": "Check material age and storage conditions",
+              "who": "Quality"
+            }
+          ]
+        },
+        "note": "Limits come from the data (mean +/- 3 sd), so off_target only shows up in control-limit questions."
+      }
+    },
+    "Uniformity": {
+      "RFV": {
+        "unit": "as logged",
+        "tolerance": {
+          "type": "upper_limit",
+          "value": 25
+        },
+        "no_reading": {
+          "has_happened": "RFV was 0 or blank for some tyres; a real force variation cannot be 0.",
+          "can_happen_because": [
+            "Test aborted: the bead did not seal or the tyre did not inflate",
+            "Tyre skipped, or a load cell or data-acquisition fault",
+            "Barcode join failed, so the result did not attach to the tyre"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the tester alarm and status log, and the test pressure of the same tyres",
+              "who": "Instrumentation / Quality"
+            },
+            {
+              "check": "Retest those tyres",
+              "who": "Quality"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Many tyres have RFV above the limit; the RFV level has shifted up.",
+          "can_happen_because": [
+            "Building drum or transfer ring out of round or misaligned",
+            "Heavy spots from long splice overlaps, light spots from open splices, or splices stacked at the same angle",
+            "Tread gauge variation or belt cord disorder",
+            "Green tyres deformed in storage (sidewall crushed, bead out of round)",
+            "Mould or press effect: segment mismatch, off-centre loading, worn bladder, post-cure inflation missing or late",
+            "Tester: loadwheel out of round, rim runout, test pressure or load off"
+          ],
+          "what_to_do": [
+            {
+              "check": "Split the tyres by building machine (green tyre barcode), press, cavity, mould and tester: following one building machine points to building, a press or mould to curing, one tester (check tyre too) to the tester",
+              "who": "Quality"
+            },
+            {
+              "check": "On the building machine it follows: check drum runout and transfer ring alignment",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Audit splices and tread cut length; check splice stagger against the spec",
+              "who": "Process / Quality"
+            },
+            {
+              "check": "On the press it follows: check loader centring and the bladder cure count",
+              "who": "Curing / Maintenance"
+            },
+            {
+              "check": "Run the master or check tyre on the tester",
+              "who": "Quality / Instrumentation"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have much higher RFV than the rest.",
+          "can_happen_because": [
+            "Tread splice gap (tread too short) or overlap (too long), or a cord overlap",
+            "Green tyre crushed in handling or storage",
+            "Mould segment bite or debris",
+            "Bead not seated properly, or a one-off pressure dip during the test"
+          ],
+          "what_to_do": [
+            {
+              "check": "Remount and retest the tyre; if the value drops, it was the measurement",
+              "who": "Quality"
+            },
+            {
+              "check": "Inspect the tyre at the RFV peak for a splice problem",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the tread length and splice of the same tyres on the building machine (barcode)",
+              "who": "Process"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "RFV swings above and below the control limits.",
+          "can_happen_because": [
+            "Tyres from different building machines, presses or sizes mixed in one chart",
+            "Measurement repeatability: bead seating, lubrication or warm-up varying",
+            "Splice placement varying from tyre to tyre"
+          ],
+          "what_to_do": [
+            {
+              "check": "Split the tyres by building machine (green tyre barcode), press, cavity, mould and tester: following one building machine points to building, a press or mould to curing, one tester (check tyre too) to the tester",
+              "who": "Quality"
+            },
+            {
+              "check": "Check tester repeatability with the master tyre",
+              "who": "Quality"
+            },
+            {
+              "check": "Check splice placement and stagger",
+              "who": "Process"
+            }
+          ]
+        }
+      },
+      "LFV": {
+        "unit": "as logged",
+        "tolerance": {
+          "type": "upper_limit",
+          "value": 13
+        },
+        "no_reading": {
+          "has_happened": "LFV was 0 or blank for some tyres; a real force variation cannot be 0.",
+          "can_happen_because": [
+            "Test aborted: the bead did not seal or the tyre did not inflate",
+            "Tyre skipped, or a load cell or data-acquisition fault",
+            "Barcode join failed, so the result did not attach to the tyre"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the tester alarm and status log, and the test pressure of the same tyres",
+              "who": "Instrumentation / Quality"
+            },
+            {
+              "check": "Retest those tyres",
+              "who": "Quality"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Many tyres have LFV above the limit; the LFV level has shifted up.",
+          "can_happen_because": [
+            "Beads not parallel, or ply slipping unevenly at the bead (turn-up left and right)",
+            "Belt or tread placed off-centre; tread or sidewall uneven",
+            "Green tyre loaded off-centre in the mould",
+            "Tester: split rim misaligned, poor bead fit, rim runout, loadwheel alignment, or wrong rim width for the size",
+            "Warm-up time on the tester too short"
+          ],
+          "what_to_do": [
+            {
+              "check": "Split the tyres by building machine (green tyre barcode), press, cavity, mould and tester: following one building machine points to building, a press or mould to curing, one tester (check tyre too) to the tester",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the bead setter and the turn-up left and right",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Check belt and tread centring",
+              "who": "Process"
+            },
+            {
+              "check": "Run the master tyre; check rims with a dial indicator and the rim width in the recipe",
+              "who": "Maintenance / Quality"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have much higher LFV than the rest.",
+          "can_happen_because": [
+            "Bead not seated, or a dry bead (lubrication missed)",
+            "Sidewall splice bulge",
+            "Green tyre crushed in storage"
+          ],
+          "what_to_do": [
+            {
+              "check": "Retest the tyre",
+              "who": "Quality"
+            },
+            {
+              "check": "Inspect the sidewall and bead area",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the bead lubrication station",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "LFV swings above and below the control limits.",
+          "can_happen_because": [
+            "Tyres from different building machines, presses or sizes mixed in one chart",
+            "Bead seating, lubrication or warm-up varying on the tester",
+            "Belt or tread placement varying from tyre to tyre"
+          ],
+          "what_to_do": [
+            {
+              "check": "Split the tyres by building machine (green tyre barcode), press, cavity, mould and tester: following one building machine points to building, a press or mould to curing, one tester (check tyre too) to the tester",
+              "who": "Quality"
+            },
+            {
+              "check": "Check tester repeatability with the master tyre",
+              "who": "Quality"
+            },
+            {
+              "check": "Check belt and tread centring",
+              "who": "Process"
+            }
+          ]
+        }
+      },
+      "Conicity": {
+        "unit": "as logged",
+        "tolerance": {
+          "type": "range",
+          "low": -10,
+          "high": 10
+        },
+        "note": "Sign conventions differ between testers, so check them before comparing testers.",
+        "no_reading": {
+          "has_happened": "Conicity was blank for some tyres. A single 0 can be real; many exact zeros in a row mean missing data.",
+          "can_happen_because": [
+            "Test aborted, or only one direction was run",
+            "Data channel fault"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the tester alarm log and whether both directions were run",
+              "who": "Instrumentation"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Conicity is consistently on one side.",
+          "can_happen_because": [
+            "Belt placed off-centre against the tread and carcass (the most common cause)",
+            "Tread or belt forming a cone: one shoulder thicker than the other",
+            "Green tyre off-centre in the mould, top and bottom curing differently, or uneven post-cure cooling",
+            "A deliberate design bias in the spec",
+            "Tester: load cell zero, direction run, or spindle and loadwheel alignment (suspect this if conicity and ply steer shift together)"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check belt and tread centring, the guides and the transfer ring",
+              "who": "Process / Maintenance"
+            },
+            {
+              "check": "Measure the tread profile gauge on the left and right shoulders",
+              "who": "Process"
+            },
+            {
+              "check": "Split conicity by press and cavity; check platen temperatures",
+              "who": "Curing / Maintenance"
+            },
+            {
+              "check": "Confirm the spec target, then run the master tyre in both directions",
+              "who": "Quality / Instrumentation"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres have conicity far from the rest.",
+          "can_happen_because": [
+            "A single misplaced belt or tread",
+            "Bead not seated during the test"
+          ],
+          "what_to_do": [
+            {
+              "check": "Retest the tyre",
+              "who": "Quality"
+            },
+            {
+              "check": "Check the building record of those tyres (barcode)",
+              "who": "Process"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "Conicity swings both ways.",
+          "can_happen_because": [
+            "Belt or tread placement varying from tyre to tyre",
+            "Bead seating or lubrication varying",
+            "Warm-up on the tester too short",
+            "Rim misalignment",
+            "Testers with different sign conventions mixed in one chart"
+          ],
+          "what_to_do": [
+            {
+              "check": "Do a repeatability study with the master tyre; if the tester's own spread is small, the scatter comes from the process",
+              "who": "Quality / Maintenance"
+            },
+            {
+              "check": "Split the chart by tester",
+              "who": "Quality"
+            },
+            {
+              "check": "Check belt and tread centring",
+              "who": "Process"
+            }
+          ]
+        }
+      },
+      "Inflation Pressure": {
+        "unit": "as logged (confirm kPa or psi)",
+        "tolerance": {
+          "type": "median_plus_minus",
+          "value": 2
+        },
+        "note": "Test pressure is a tester and seal value, not a tyre result. Tyres tested outside the band have biased RFV, LFV and conicity: flag and retest them.",
+        "no_reading": {
+          "has_happened": "Test pressure was 0 or blank for some tyres.",
+          "can_happen_because": [
+            "Bead never sealed, so the tyre did not inflate",
+            "Test aborted, air supply off, or a channel fault"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the tester alarm log; RFV present with 0 pressure points to a data or transducer problem",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Check bead lubrication and the rim seal",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "off_target": {
+          "has_happened": "Test pressure is consistently higher (or lower) than normal.",
+          "can_happen_because": [
+            "Wrong pressure setpoint for the size",
+            "Pressure transducer offset, or low supply air",
+            "Fouled pressure regulator",
+            "Different sizes or testers with different setpoints mixed together"
+          ],
+          "what_to_do": [
+            {
+              "check": "Compare the median pressure per tester and size",
+              "who": "Quality"
+            },
+            {
+              "check": "Calibrate the transducer against a reference gauge",
+              "who": "Instrumentation"
+            },
+            {
+              "check": "Service the regulator and check the supply air",
+              "who": "Maintenance"
+            }
+          ]
+        },
+        "spikes": {
+          "has_happened": "A few tyres were tested at a much lower (or higher) pressure.",
+          "can_happen_because": [
+            "Air leaking at the upper bead on heavy or soft-sidewall tyres",
+            "Dry bead (lubrication missed)",
+            "Rim width not matching the bead",
+            "Damaged bead or rim"
+          ],
+          "what_to_do": [
+            {
+              "check": "Check the lubrication station and the rim seal face",
+              "who": "Maintenance"
+            },
+            {
+              "check": "Retest those tyres; their RFV, LFV and conicity are not reliable",
+              "who": "Quality"
+            }
+          ]
+        },
+        "jumping": {
+          "has_happened": "Test pressure swings up and down.",
+          "can_happen_because": [
+            "Pressure-reducing valve unstable",
+            "Seal at the bead varying from tyre to tyre",
+            "Size or recipe changes inside the window"
+          ],
+          "what_to_do": [
+            {
+              "check": "Look at the pressure trace per test; clean or replace the valve",
+              "who": "Instrumentation / Maintenance"
+            },
+            {
+              "check": "Split the chart by size",
+              "who": "Quality"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -21,6 +21,7 @@ import pandas as pd
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
+from app.graph.tools.spc_tools.spc_rca import run_rca
 logger = logging.getLogger(__name__)
 
 _KEY = ["machine", "itemcode", "parameter"]
@@ -47,6 +48,19 @@ class StreamsArgs(BaseModel):
     )
     max_rows: int = Field(50, description="Maximum rows to return (worst Cpk first).")
 
+
+class RcaArgs(BaseModel):
+    flow: Literal["cpk_low", "crossing_limit"] = Field(
+        description="cpk_low = 'why is Cp/Cpk low'. crossing_limit = a parameter crossing its limit on a given day."
+    )
+    parameter: str = Field(description="Parameter name as in the data, e.g. 'Tread Width', 'PLY2 Splice', 'RFV'.")
+    machine: str = Field(description="Exact machine name, e.g. 'VMI_MAXX_01', 'VMIEXXIUM02', 'QuintuPlex', '30-0224'.")
+    itemcode: str = Field(description="Exact itemcode (recipe).")
+    metric: Literal["cp", "cpk"] = Field("cpk", description="Which one the user asked about (cpk_low flow only).")
+    date: Optional[str] = Field(None, description="YYYY-MM-DD. The day for crossing_limit; optional as-of date for cpk_low.")
+    limit_type: Optional[Literal["control", "spec"]] = Field(
+        None, description="crossing_limit only: 'control' (default) for control limits, 'spec' if the user says spec limit."
+    )
 
 def _r(x):
     return None if pd.isna(x) else round(float(x), 3)
@@ -183,4 +197,14 @@ def build_spc_tools(df: pd.DataFrame) -> List[StructuredTool]:
             ),
             args_schema=StreamsArgs,
         ),
+        StructuredTool.from_function(
+            func=run_rca,
+            name="explain_spc_issue",
+            description=(
+                "Root-cause analysis for SPC. Use for 'why is Cp/Cpk low' (flow=cpk_low) and for 'parameter X of item Y "
+                "on machine Z is crossing the limit on <day>, what happened / what to do' (flow=crossing_limit). "
+                "Needs the exact machine, parameter and itemcode. Returns the finished answer."
+            ),
+            args_schema=RcaArgs,
+        )
     ]
