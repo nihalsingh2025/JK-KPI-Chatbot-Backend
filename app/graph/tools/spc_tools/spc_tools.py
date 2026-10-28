@@ -53,7 +53,7 @@ class RcaArgs(BaseModel):
     flow: Literal["cpk_low", "crossing_limit"] = Field(
         description="cpk_low = 'why is Cp/Cpk low'. crossing_limit = a parameter crossing its limit on a given day."
     )
-    parameter: str = Field(description="Parameter name as in the data, e.g. 'Tread Width', 'PLY2 Splice', 'RFV'.")
+    parameter: str = Field(description="Parameter name WITHOUT the metric, e.g. 'PA Splice' (not 'PA Splice Cp'), 'Tread Width', 'RFV'.")
     machine: str = Field(description="Exact machine name, e.g. 'VMI_MAXX_01', 'VMIEXXIUM02', 'QuintuPlex', '30-0224'.")
     itemcode: str = Field(description="Exact itemcode (recipe).")
     metric: Literal["cp", "cpk"] = Field("cpk", description="Which one the user asked about (cpk_low flow only).")

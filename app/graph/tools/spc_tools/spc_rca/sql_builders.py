@@ -36,7 +36,7 @@ def num(x) -> str:
 def gold_latest_date_sql(machine, item, parameter) -> str:
     return (
         f"SELECT MAX(date) AS date FROM {DATABRICKS_TABLE} "
-        f"WHERE lower(plant) = '{C.PLANT}' AND lower(machine) = '{lit(machine)}' "
+        f"WHERE lower(machine) = '{lit(machine)}' "
         f"AND lower(itemcode) = '{lit(item)}' AND lower(kpi_name) = '{lit(parameter)} cpk'"
     )
 
@@ -49,7 +49,7 @@ def gold_metrics_sql(machine, item, parameter, suffixes, up_to_date=None) -> str
     upto = f" AND date <= Date '{check_date(up_to_date)}'" if up_to_date else ""
     return (
         f"SELECT date, kpi_name, actual_value, status FROM {DATABRICKS_TABLE} "
-        f"WHERE lower(plant) = '{C.PLANT}' AND lower(machine) = '{m}' AND lower(itemcode) = '{i}' "
+        f"WHERE lower(machine) = '{m}' AND lower(itemcode) = '{i}' "
         f"AND lower(kpi_name) IN ({names}) "
         f"AND date = (SELECT MAX(date) FROM {DATABRICKS_TABLE} "
         f"WHERE lower(machine) = '{m}' AND lower(itemcode) = '{i}' AND lower(kpi_name) = {anchor}{upto})"
@@ -62,7 +62,7 @@ def readings_cte(ctx: dict) -> str:
     p, m = ctx["param_cfg"], ctx["machine_cfg"]
     col = p["column"]
     v = col if p["zero_is_real"] else f"CASE WHEN {col} > 0 THEN {col} END"
-    sp = f"{col}_setpoint" if p["setpoint"] else "NULL"
+    sp = f"{col}_setpoint" if p["setpoint"] else "CAST(NULL AS DOUBLE)"
     start, end = ts(ctx["window"]["start"]), ts(ctx["window"]["end"])
     machine, item = lit(ctx["machine"]), lit(ctx["itemcode"])
 
@@ -101,7 +101,7 @@ def setpoint_sql(ctx) -> str:
 def stats_sql(ctx) -> str:
     return (
         readings_cte(ctx) + "\n"
-        "SELECT AVG(v) AS average, STDDEV(v) AS sd, PERCENTILE_APPROX(v, 0.5) AS median FROM readings"
+        "SELECT AVG(v) AS average, STDDEV(v) AS sd, approx_percentile(v, 0.5) AS median FROM readings"
     )
 
 
@@ -127,7 +127,7 @@ def when_sql(ctx) -> str:
     lim = ctx["limits"]
     bucket = (
         "date_trunc('HOUR', event_time)" if ctx["window"]["kind"] == "day"
-        else "to_date(event_time - INTERVAL 7 HOURS)"
+        else "CAST(event_time - INTERVAL '7' HOUR AS DATE)"
     )
     cond = f"v > {num(lim['high'])}"
     if lim["low"] is not None:

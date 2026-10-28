@@ -7,17 +7,18 @@ import logging
 import re
 from datetime import date, datetime, timedelta
 
-from app.tools.databricks_api import run_query
 from app.graph.tools.spc_tools.spc_rca import config as C
 from app.graph.tools.spc_tools.spc_rca import sql_builders as S
 from app.graph.tools.spc_tools.spc_rca.knowledge import find_page, rules
+from app.tools.databricks_api import run_query, DatabricksQueryError
 
 logger = logging.getLogger(__name__)
 
 
 # ---- small helpers ---------------------------------------------------------------------
 def _norm(name: str) -> str:
-    return re.sub(r"\s+", " ", str(name).replace("_", " ")).strip().lower()
+    n = re.sub(r"\s+", " ", str(name).replace("_", " ")).strip().lower()
+    return re.sub(r"\s+(cp|cpk|pp|ppk|ucl|lcl)$", "", n)   # drop a trailing metric word
 
 
 def _f(x):
@@ -40,10 +41,14 @@ def _pretty(day: str) -> str:
 
 
 def _query(ctx, label: str, sql: str) -> list:
-    rows = run_query(sql)
+    try:
+        rows = run_query(sql)
+    except DatabricksQueryError as exc:
+        if "No tabular data" not in str(exc):      # real API failures still raise
+            raise
+        rows = []                                   # the API returns no table for zero rows
     logger.info("spc_rca: query=%s | rows=%d", label, len(rows))
     return rows
-
 
 def _stop(ctx, message: str, why: str):
     ctx["stop"] = message

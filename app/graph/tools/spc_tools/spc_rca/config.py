@@ -7,8 +7,8 @@ app/knowledge/spc_chatbot_knowledge.json - not here.
 """
 
 # ---- tables -------------------------------------------------------------------------
-SILVER = "`jk-infiniti-datalake`.silver"       # change here if the API needs a different prefix
-PLANT = "btp"                                  # compared with lower(plant)
+SILVER = "silver"
+PLANT = "btp"
 TIME_COL = "event_time"
 ITEM_COL = "item_code"
 

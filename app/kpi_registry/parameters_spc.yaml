@@ -61,6 +61,7 @@ gotchas:
   - "Questions about what got worse / better / changed / improved: fetch every day from the start of the period to LATEST (e.g. 'this week' -> date BETWEEN date_trunc('week', LATEST) AND LATEST), with the metric asked (default Cpk). The comparison is done by a tool, not SQL."
   - "RFV and LFV have no Cp / Pp (one-sided spec) - use Cpk / Ppk."
   - "Fetch raw rows only: filters, ORDER BY, LIMIT and the LATEST subquery are fine, no maths or CTEs."
+  - "Machine names: VMI_MAXX_01 to VMI_MAXX_04, VMIEXXIUM01 to VMIEXXIUM04, QuintuPlex, 30-0224, 30-0297, MICROPOISE. Users may write short forms (VMIMAXX2, maxx 2, maxx-02, exxium 3). Always use the exact name with lower"
 
 example_questions:
   - question: "What is the Cpk of tread length on Maxx 1 for RANGER?"

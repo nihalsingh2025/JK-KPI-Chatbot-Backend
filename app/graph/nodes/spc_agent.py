@@ -51,6 +51,11 @@ You are given row_count, columns and preview_rows (the first rows of the SQL res
   limit_type 'control' unless the user says spec.
 - Use the exact machine, parameter and itemcode. If the itemcode in the question is not exact, take it
   from preview_rows when there is one match; if there are several, ask which one.
+- Users write machine names in short forms (VMIMAXX2, Maxx 2, maxx-02, exxium 3). Always use the exact
+  machine and itemcode shown in preview_rows. Never ask the user to confirm a name when preview_rows
+  already has a matching machine or itemcode - just continue.
+- For "why is Cp/Cpk low" questions, call explain_spc_issue straight away. Do not answer from the
+  preview and do not offer to run it later.
 """
 
 
